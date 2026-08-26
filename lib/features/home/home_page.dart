@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -72,6 +73,8 @@ class HomePage extends ConsumerWidget {
     final nextDue = dues.isEmpty
         ? null
         : dues.reduce((a, b) => a.daysLeft <= b.daysLeft ? a : b);
+    final onPhoto =
+        pet.avatarPath != null && ImageStore.exists(pet.avatarPath!);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -80,44 +83,28 @@ class HomePage extends ConsumerWidget {
         label: const Text('AI 助手'),
         tooltip: 'AI 助手',
       ),
-      body: _AmbientHeader(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            SizedBox(height: MediaQuery.paddingOf(context).top + 10),
-            // 顶栏：宠物胶囊 + 同步/设置。
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(child: _PetCapsule(pet: pet, pets: pets)),
-                  const SyncButton(),
-                  IconButton(
-                    icon: Icon(Icons.settings_outlined,
-                        color: dark ? Colors.white : AppTheme.ink),
-                    tooltip: '设置',
-                    onPressed: () => context.push('/settings'),
-                  ),
-                ],
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // 顶部照片区 + 悬浮其上的毛玻璃体重卡。
+          Stack(
+            children: [
+              _PhotoHeader(pet: pet, pets: pets, onPhoto: onPhoto),
+              Padding(
+                padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top + 150),
+                child: _SceneCard(
+                  weight: weight?.value,
+                  weightDelta: weightChange?.$1,
+                  bcs: bcs?.value?.toInt(),
+                  nextDue: nextDue,
+                ),
               ),
-            ),
-            // 问候语。
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-              child: _Greeting(pet: pet),
-            ),
-            const SizedBox(height: 10),
-            // 场景卡：宠物照片底图 + 数据主视觉。
-            _SceneCard(
-              pet: pet,
-              weight: weight?.value,
-              weightDelta: weightChange?.$1,
-              bcs: bcs?.value?.toInt(),
-              nextDue: nextDue,
-            ),
-            const SizedBox(height: 16),
-            // 金刚位（单色）。
-            const _QuickActions(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 金刚位（单色）。
+          const _QuickActions(),
             // AI 洞察。
             _HomeSection(
               title: 'AI 洞察',
@@ -171,6 +158,103 @@ class HomePage extends ConsumerWidget {
             const SizedBox(height: 96),
           ],
         ),
+      );
+  }
+}
+
+/// 顶部照片头：宠物照片铺底 + 暗纱渐入画布，顶栏与问候语坐其上。
+class _PhotoHeader extends StatelessWidget {
+  const _PhotoHeader({
+    required this.pet,
+    required this.pets,
+    required this.onPhoto,
+  });
+
+  final Pet pet;
+  final List<Pet> pets;
+  final bool onPhoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final canvas = dark ? AppTheme.darkBg : AppTheme.lightBg;
+    final height = MediaQuery.paddingOf(context).top + 212;
+
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (onPhoto)
+            Image.file(
+              File(pet.avatarPath!),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: dark
+                        ? AppTheme.headerGradientDark
+                        : AppTheme.headerGradientLight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+          // 暗纱：顶部压暗保可读，底部渐入画布色消融。
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: onPhoto
+                    ? [
+                        Colors.black.withValues(alpha: 0.42),
+                        Colors.black.withValues(alpha: 0.08),
+                        canvas.withValues(alpha: 0.0),
+                        canvas,
+                      ]
+                    : [
+                        dark
+                            ? AppTheme.headerGradientDark[0]
+                            : AppTheme.headerGradientLight[0],
+                        canvas,
+                      ],
+                stops: onPhoto ? const [0, 0.55, 0.8, 1] : const [0, 1],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          // 顶栏 + 问候语。
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: MediaQuery.paddingOf(context).top + 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: _PetCapsule(pet: pet, pets: pets, onPhoto: onPhoto)),
+                    if (onPhoto) const SyncButtonLight() else const SyncButton(),
+                    IconButton(
+                      icon: Icon(Icons.settings_outlined,
+                          color: onPhoto
+                              ? Colors.white
+                              : (dark ? Colors.white : AppTheme.ink)),
+                      tooltip: '设置',
+                      onPressed: () => context.push('/settings'),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: _Greeting(pet: pet, onPhoto: onPhoto),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -201,46 +285,72 @@ class _AmbientHeader extends StatelessWidget {
   }
 }
 
-/// 宠物身份胶囊：白瓷片 + 头像 + 名字 + 下拉切换。
+/// 宠物身份胶囊：照片头上用毛玻璃，画布上用白瓷片。
 class _PetCapsule extends StatelessWidget {
-  const _PetCapsule({required this.pet, required this.pets});
+  const _PetCapsule({required this.pet, required this.pets, this.onPhoto = false});
 
   final Pet pet;
   final List<Pet> pets;
+  final bool onPhoto;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    Widget content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PetAvatar(
+          path: pet.avatarPath,
+          speciesIcon: Icons.pets,
+          size: 28,
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            '${pet.name} · ${pet.speciesLabel}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTheme.cardTitle(
+                    onPhoto ? Colors.white : cs.onSurface)
+                .copyWith(fontSize: 13.5),
+          ),
+        ),
+        const SizedBox(width: 2),
+        Icon(Icons.keyboard_arrow_down_rounded,
+            color: onPhoto
+                ? Colors.white70
+                : cs.onSurfaceVariant,
+            size: 20),
+      ],
+    );
+    if (!onPhoto) {
+      return GestureDetector(
+        onTap: () => _showPicker(context),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: content,
+        ),
+      );
+    }
     return GestureDetector(
       onTap: () => _showPicker(context),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PetAvatar(
-              path: pet.avatarPath,
-              speciesIcon: Icons.pets,
-              size: 28,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                '${pet.name} · ${pet.speciesLabel}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    AppTheme.cardTitle(cs.onSurface).copyWith(fontSize: 13.5),
-              ),
-            ),
-            const SizedBox(width: 2),
-            Icon(Icons.keyboard_arrow_down_rounded,
-                color: cs.onSurfaceVariant, size: 20),
-          ],
+            child: content,
+          ),
         ),
       ),
     );
@@ -305,15 +415,22 @@ class _PetCapsule extends StatelessWidget {
   }
 }
 
-/// 问候语：时段问候 + 宠物名。
+/// 问候语：时段问候 + 宠物名（照片头上为白色）。
 class _Greeting extends StatelessWidget {
-  const _Greeting({required this.pet});
+  const _Greeting({required this.pet, this.onPhoto = false});
 
   final Pet pet;
+  final bool onPhoto;
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final mainColor = onPhoto
+        ? Colors.white
+        : (dark ? Colors.white : AppTheme.ink);
+    final subColor = onPhoto
+        ? Colors.white70
+        : (dark ? Colors.white38 : AppTheme.inkSecondary);
     final hour = DateTime.now().hour;
     final hello = hour < 6
         ? '夜深了'
@@ -331,33 +448,29 @@ class _Greeting extends StatelessWidget {
       children: [
         Text(
           '$hello，${pet.name}',
-          style: AppTheme.largeTitle(dark ? Colors.white : AppTheme.ink,
-              size: 19),
+          style: AppTheme.largeTitle(mainColor, size: 19),
         ),
         const SizedBox(height: 4),
         Text(
           '${now.month}月${now.day}日 周${weekdays[now.weekday - 1]} · '
           '${HealthCalculator.ageText(pet.birthday)}的${pet.speciesLabel}',
-          style: AppTheme.subhead(
-              dark ? Colors.white38 : AppTheme.inkSecondary),
+          style: AppTheme.subhead(subColor),
         ),
       ],
     );
   }
 }
 
-/// 场景卡：宠物照片作底图（无照片时回退陶土渐变）+ 暗纱保证可读，
+/// 体重场景卡：陶土渐变底 + 毛玻璃（BackdropFilter 模糊下方照片），
 /// 大数字体重 + 体型/下次到期次级信息 + 快捷记录三连。
 class _SceneCard extends StatelessWidget {
   const _SceneCard({
-    required this.pet,
     this.weight,
     this.weightDelta,
     this.bcs,
     this.nextDue,
   });
 
-  final Pet pet;
   final double? weight;
   final double? weightDelta;
   final int? bcs;
@@ -368,55 +481,35 @@ class _SceneCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final onCard = Colors.white.withValues(alpha: 0.95);
     final onCardFaint = Colors.white.withValues(alpha: 0.6);
-    final hasAvatar =
-        pet.avatarPath != null && ImageStore.exists(pet.avatarPath!);
-    final fallback = LinearGradient(
-      colors:
-          dark ? AppTheme.sceneGradientDark : AppTheme.sceneGradientLight,
+    // 半透明陶土渐变：叠在照片上时透出模糊底图，形成毛玻璃质感。
+    final gradient = LinearGradient(
+      colors: dark
+          ? [
+              AppTheme.sceneGradientDark[0].withValues(alpha: 0.82),
+              AppTheme.sceneGradientDark[1].withValues(alpha: 0.94),
+            ]
+          : [
+              AppTheme.sceneGradientLight[0].withValues(alpha: 0.72),
+              AppTheme.sceneGradientLight[1].withValues(alpha: 0.92),
+            ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 244),
-        decoration: BoxDecoration(
-          gradient: hasAvatar ? null : fallback,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.passthrough,
-            children: [
-              // 底图：宠物照片 + 暗纱。
-              if (hasAvatar)
-                Positioned.fill(
-                  child: Image.file(
-                    File(pet.avatarPath!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              if (hasAvatar)
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withValues(alpha: 0.38),
-                          Colors.black.withValues(alpha: 0.12),
-                          Colors.black.withValues(alpha: 0.55),
-                        ],
-                        stops: const [0, 0.42, 1],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ),
-              Padding(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 244),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            ),
+            child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,10 +678,9 @@ class _SceneCard extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
-      ),
     );
   }
 

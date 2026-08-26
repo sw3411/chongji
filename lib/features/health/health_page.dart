@@ -150,7 +150,7 @@ class _HealthPageState extends ConsumerState<HealthPage> {
 
                 // ---- 趋势图（融入页面，无卡片盒）（不足 2 条体重时常驻引导）----
                 if (weights.length >= 2)
-                  _TrendChart(weights: weights, bcsRecords: bcsRecords)
+                  _TrendChart(weights: weights)
                 else
                   _ChartTeaser(weightCount: weights.length),
                 const SizedBox(height: 20),
@@ -401,14 +401,13 @@ class _DataHeader extends StatelessWidget {
 }
 
 // ============================================================
-// 趋势图：体重实线（渐变面积）× BCS 虚线，两端趋势外推
+// 趋势图：仅体重，融入画布（无卡片盒、无网格，底部发丝基线）
 // ============================================================
 
 class _TrendChart extends StatelessWidget {
-  const _TrendChart({required this.weights, required this.bcsRecords});
+  const _TrendChart({required this.weights});
 
   final List<HealthRecord> weights;
-  final List<HealthRecord> bcsRecords;
 
   @override
   Widget build(BuildContext context) {
@@ -416,111 +415,29 @@ class _TrendChart extends StatelessWidget {
     final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
     final surface = dark ? AppTheme.darkSurface : Colors.white;
     final weightColor = AppTheme.green;
-    final bcsColor = AppTheme.honey;
 
-    final DateTime first;
-    final DateTime lastDate;
-    if (bcsRecords.isEmpty) {
-      first = weights.first.date;
-      lastDate = weights.last.date;
-    } else {
-      first = weights.first.date.isBefore(bcsRecords.first.date)
-          ? weights.first.date
-          : bcsRecords.first.date;
-      lastDate = weights.last.date.isAfter(bcsRecords.last.date)
-          ? weights.last.date
-          : bcsRecords.last.date;
-    }
+    final first = weights.first.date;
+    final lastDate = weights.last.date;
     double xOf(DateTime d) => d.difference(first).inDays.toDouble();
-
-    final maxX = (xOf(lastDate).clamp(1.0, double.infinity));
+    final maxX = xOf(lastDate).clamp(1.0, double.infinity);
 
     final wValues = weights.map((r) => r.value!).toList();
     final minW = wValues.reduce((a, b) => a < b ? a : b);
     final maxW = wValues.reduce((a, b) => a > b ? a : b);
-    final pad = (maxW - minW).clamp(0.2, 10.0) * 0.3;
+    final pad = (maxW - minW).clamp(0.2, 10.0) * 0.25;
     final minY = minW - pad;
     final maxY = maxW + pad;
-    // BCS 1-9 仿射映射到 [minY, maxY]。
-    double yOfBcs(double bcs) => minY + (bcs - 1) / 8 * (maxY - minY);
-
-    final weightSpots = [
-      for (final r in weights) FlSpot(xOf(r.date), r.value!),
-    ];
-    final bcsSpots = [
-      for (final r in bcsRecords) FlSpot(xOf(r.date), yOfBcs(r.value!)),
-    ];
-    final hasBcs = bcsSpots.isNotEmpty;
-
-    // 两端趋势外推：体重与 BCS 记录日期往往不齐（如体重 5/1 起、
-    // BCS 5/20 起），把没覆盖全局时间范围的一端按自身最小二乘趋势
-    // 补一个预测点，让两条线在视觉上同框可比。预测段用浅色虚线区分。
-    (double, double) fitLine(List<FlSpot> pts) {
-      if (pts.length == 1) return (0, pts.first.y);
-      var sx = 0.0, sy = 0.0, sxx = 0.0, sxy = 0.0;
-      for (final p in pts) {
-        sx += p.x;
-        sy += p.y;
-        sxx += p.x * p.x;
-        sxy += p.x * p.y;
-      }
-      final n = pts.length.toDouble();
-      final denom = n * sxx - sx * sx;
-      final slope = denom == 0 ? 0.0 : (n * sxy - sx * sy) / denom;
-      return (slope, (sy - slope * sx) / n);
-    }
-
-    List<FlSpot> endsWithPrediction(
-      List<FlSpot> pts, {
-      required double Function(double) clampY,
-    }) {
-      if (pts.isEmpty) return pts;
-      final (slope, intercept) = fitLine(pts);
-      final out = [...pts];
-      if (pts.first.x > 0.5) {
-        out.insert(0, FlSpot(0, clampY(intercept)));
-      }
-      if (pts.last.x < maxX - 0.5) {
-        out.add(FlSpot(maxX, clampY(slope * maxX + intercept)));
-      }
-      return out;
-    }
-
-    // 体重：预测值夹在图幅内；BCS：先在 1-9 分原始空间外推再映射。
-    final weightAll = endsWithPrediction(weightSpots,
-        clampY: (y) => y.clamp(minY, maxY));
-    List<FlSpot> bcsAll = [];
-    if (hasBcs) {
-      final raw = [
-        for (final r in bcsRecords) (xOf(r.date), r.value!),
-      ];
-      final extended = endsWithPrediction(
-        [for (final p in raw) FlSpot(p.$1, p.$2)],
-        clampY: (y) => y.clamp(1, 9),
-      );
-      bcsAll = [
-        // 前后各可能多一个预测点，其余为真实点；统一转映射坐标。
-        for (final p in extended) FlSpot(p.x, yOfBcs(p.y)),
-      ];
-    }
-    // 真实点与预测点的分段索引（用于浅色虚线绘制）。
-    final wPredLeft = weightAll.length > weightSpots.length &&
-            weightAll.first.x == 0
-        ? 1
-        : 0;
-    final wPredRight = weightAll.length - weightSpots.length - wPredLeft;
-    final bPredLeft = hasBcs && bcsAll.length > bcsSpots.length && bcsAll.first.x == 0 ? 1 : 0;
-    final bPredRight = hasBcs ? bcsAll.length - bcsSpots.length - bPredLeft : 0;
-
-    // 轴刻度统一按"比例位置"判定（0 / 0.5 / 1 三档），
-    // 左右轴刻度严格对齐且不会因浮点 interval 漂移产生重叠刻度。
     final range = maxY - minY;
+
+    // 轴刻度按"比例位置"判定（0 / 0.5 / 1 三档），不因浮点漂移重叠。
     bool atFraction(double v, double f) =>
         ((v - minY) / range - f).abs() < 0.03;
 
+    final spots = [
+      for (final r in weights) FlSpot(xOf(r.date), r.value!),
+    ];
     final spanDays = lastDate.difference(first).inDays;
 
-    // 无卡片盒：图表直接落在画布上，仅保留底部一条发丝基线。
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 14, 2, 0),
       child: Column(
@@ -530,39 +447,11 @@ class _TrendChart extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
               children: [
-                Text('近 $spanDays 天趋势',
-                    style:
-                        AppTheme.label(dark ? Colors.white30 : AppTheme.inkTertiary)),
+                Text('近 $spanDays 天体重',
+                    style: AppTheme.label(
+                        dark ? Colors.white30 : AppTheme.inkTertiary)),
                 const Spacer(),
-                // 图例。
-                Row(
-                  children: [
-                    Container(
-                        width: 12,
-                        height: 2.5,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: weightColor,
-                        ),
-                        margin: const EdgeInsets.only(right: 5)),
-                    Text('体重', style: AppTheme.captionSm(inkSec)),
-                    const SizedBox(width: 12),
-                    if (hasBcs) ...[
-                      Container(
-                          width: 12,
-                          height: 2.5,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(
-                              color: bcsColor,
-                              strokeAlign: BorderSide.strokeAlignInside,
-                            ),
-                          ),
-                          margin: const EdgeInsets.only(right: 5)),
-                      Text('体型', style: AppTheme.captionSm(inkSec)),
-                    ],
-                  ],
-                ),
+                Text('单位 kg', style: AppTheme.captionSm(inkSec)),
               ],
             ),
           ),
@@ -580,226 +469,89 @@ class _TrendChart extends StatelessWidget {
                   show: true,
                   border: Border(
                     bottom: BorderSide(
-                      color: dark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                      color:
+                          dark ? AppTheme.darkDivider : AppTheme.lightDivider,
                       width: 1,
                     ),
                   ),
                 ),
-                  titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: hasBcs,
-                        reservedSize: 22,
-                        interval: range / 2,
-                        getTitlesWidget: (v, _) {
-                          // 只在 1 / 5 / 9 三档显示，与左轴刻度同高对齐。
-                          if (atFraction(v, 0.5)) {
-                            return _bcsTitle('5', bcsColor,
-                                highlight: true);
-                          }
-                          if (atFraction(v, 1)) return _bcsTitle('9', bcsColor);
-                          if (atFraction(v, 0)) {
-                            return _bcsTitle('1', bcsColor);
-                          }
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(),
+                  rightTitles: const AxisTitles(),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      interval: (maxX / 2).clamp(1.0, double.infinity),
+                      getTitlesWidget: (v, _) {
+                        final d = first.add(Duration(days: v.toInt()));
+                        return SideTitleWidget(
+                          axisSide: AxisSide.bottom,
+                          child: Text('${d.month}/${d.day}',
+                              style: AppTheme.captionSm(inkSec)),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: range / 2,
+                      getTitlesWidget: (v, _) {
+                        if (!atFraction(v, 0.5) &&
+                            !atFraction(v, 1) &&
+                            !atFraction(v, 0)) {
                           return const SizedBox.shrink();
-                        },
+                        }
+                        return SideTitleWidget(
+                          axisSide: AxisSide.left,
+                          child: Text(
+                            v.toStringAsFixed(1),
+                            style: AppTheme.captionSm(inkSec),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                lineTouchData: const LineTouchData(enabled: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: false,
+                    color: weightColor,
+                    barWidth: 2.4,
+                    dotData: FlDotData(
+                      show: weights.length <= 12,
+                      getDotPainter: (spot, percent, bar, index) =>
+                          FlDotCirclePainter(
+                        radius: 3.5,
+                        color: weightColor,
+                        strokeWidth: 2,
+                        strokeColor: surface,
                       ),
                     ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 22,
-                        interval: (maxX / 2).clamp(1.0, double.infinity),
-                        getTitlesWidget: (v, _) {
-                          final d = first.add(Duration(days: v.toInt()));
-                          return SideTitleWidget(
-                            axisSide: AxisSide.bottom,
-                            child: Text('${d.month}/${d.day}',
-                                style: AppTheme.captionSm(inkSec)),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        interval: range / 2,
-                        getTitlesWidget: (v, _) {
-                          if (!atFraction(v, 0.5) &&
-                              !atFraction(v, 1) &&
-                              !atFraction(v, 0)) {
-                            return const SizedBox.shrink();
-                          }
-                          return SideTitleWidget(
-                            axisSide: AxisSide.left,
-                            child: Text(
-                              v.toStringAsFixed(1),
-                              style: AppTheme.captionSm(inkSec),
-                            ),
-                          );
-                        },
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          weightColor.withValues(alpha: 0.14),
+                          weightColor.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
                     ),
                   ),
-                  lineTouchData: const LineTouchData(enabled: false),
-                  lineBarsData: [
-                    // 体重真实段：渐变面积 + 白圈端点。
-                    LineChartBarData(
-                      spots: wPredLeft == 0 && wPredRight == 0
-                          ? weightAll
-                          : weightAll.sublist(
-                              wPredLeft, weightAll.length - wPredRight),
-                      isCurved: false,
-                      color: weightColor,
-                      barWidth: 2.4,
-                      dotData: FlDotData(
-                        show: weights.length <= 12,
-                        getDotPainter: (spot, percent, bar, index) =>
-                            FlDotCirclePainter(
-                          radius: 3.5,
-                          color: weightColor,
-                          strokeWidth: 2,
-                          strokeColor: surface,
-                        ),
-                      ),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        gradient: LinearGradient(
-                          colors: [
-                            weightColor.withValues(alpha: 0.14),
-                            weightColor.withValues(alpha: 0.0),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                    // 体重预测段（浅色虚线 + 空心端点）。
-                    if (wPredLeft == 1)
-                      LineChartBarData(
-                        spots: weightAll.sublist(0, 2),
-                        isCurved: false,
-                        color: weightColor.withValues(alpha: 0.45),
-                        barWidth: 2,
-                        dashArray: [4, 4],
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                            radius: 3.5,
-                            color: surface,
-                            strokeColor: weightColor.withValues(alpha: 0.6),
-                            strokeWidth: 1.5,
-                          ),
-                        ),
-                      ),
-                    if (wPredRight == 1)
-                      LineChartBarData(
-                        spots:
-                            weightAll.sublist(weightAll.length - 2),
-                        isCurved: false,
-                        color: weightColor.withValues(alpha: 0.45),
-                        barWidth: 2,
-                        dashArray: [4, 4],
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                            radius: 3.5,
-                            color: surface,
-                            strokeColor: weightColor.withValues(alpha: 0.6),
-                            strokeWidth: 1.5,
-                          ),
-                        ),
-                      ),
-                    // BCS 真实段。
-                    if (hasBcs)
-                      LineChartBarData(
-                        spots: bPredLeft == 0 && bPredRight == 0
-                            ? bcsAll
-                            : bcsAll.sublist(
-                                bPredLeft, bcsAll.length - bPredRight),
-                        isCurved: false,
-                        color: bcsColor,
-                        barWidth: 1.8,
-                        dashArray: [5, 4],
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                            radius: 3.5,
-                            color: bcsColor,
-                            strokeWidth: 2,
-                            strokeColor: surface,
-                          ),
-                        ),
-                      ),
-                    // BCS 预测段。
-                    if (hasBcs && bPredLeft == 1)
-                      LineChartBarData(
-                        spots: bcsAll.sublist(0, 2),
-                        isCurved: false,
-                        color: bcsColor.withValues(alpha: 0.45),
-                        barWidth: 1.6,
-                        dashArray: [3, 4],
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                            radius: 3.5,
-                            color: surface,
-                            strokeColor: bcsColor.withValues(alpha: 0.6),
-                            strokeWidth: 1.5,
-                          ),
-                        ),
-                      ),
-                    if (hasBcs && bPredRight == 1)
-                      LineChartBarData(
-                        spots: bcsAll.sublist(bcsAll.length - 2),
-                        isCurved: false,
-                        color: bcsColor.withValues(alpha: 0.45),
-                        barWidth: 1.6,
-                        dashArray: [3, 4],
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                            radius: 3.5,
-                            color: surface,
-                            strokeColor: bcsColor.withValues(alpha: 0.6),
-                            strokeWidth: 1.5,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-              child: Text(
-                hasBcs
-                    ? '右轴为体型分（1-9），绿色 5 分为理想体型；浅色虚线端点为趋势预测'
-                    : '浅色虚线端点为按趋势外推的预测值',
-                style: AppTheme.captionSm(inkSec),
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
-
-  Widget _bcsTitle(String text, Color color, {bool highlight = false}) =>
-      SideTitleWidget(
-        axisSide: AxisSide.right,
-        child: Text(
-          text,
-          style: AppTheme.captionSm(highlight ? AppTheme.okGreen : color)
-              .copyWith(fontWeight: highlight ? FontWeight.w800 : null),
-        ),
-      );
 }
 
 /// 趋势图引导：体重记录不足 2 条时的常驻入口（无卡片盒，融入画布）。

@@ -175,7 +175,7 @@ class _HeroSection extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final canvas = dark ? AppTheme.darkBg : AppTheme.lightBg;
     final statusTop = MediaQuery.paddingOf(context).top;
-    const bandHeight = 116.0;
+    const bandHeight = 150.0;
     final hasAvatar =
         pet.avatarPath != null && ImageStore.exists(pet.avatarPath!);
     final fallback = LinearGradient(
@@ -188,7 +188,7 @@ class _HeroSection extends StatelessWidget {
     final onCardFaint = Colors.white.withValues(alpha: 0.68);
 
     return SizedBox(
-      height: statusTop + 372,
+      height: statusTop + 416,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -245,7 +245,7 @@ class _HeroSection extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: _Greeting(pet: pet, onPhoto: true),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 // ---- 关键数据（高不透明白字直坐照片上）----
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -401,30 +401,84 @@ class _HeroSection extends StatelessWidget {
               ],
             ),
           ),
-          // 底部毛玻璃过渡带：模糊照片并渐入画布色。
+          // 底部渐进式毛玻璃：三层递增模糊 + 递增不透明度，
+          // 从几乎全透的照片自然沉入画布色。
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             height: bandHeight,
-            child: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        canvas.withValues(alpha: 0.0),
-                        canvas.withValues(alpha: 0.42),
-                        canvas,
-                      ],
-                      stops: const [0, 0.45, 1],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+            child: Stack(
+              children: [
+                // 第一层：最浅模糊铺满全带。
+                Positioned.fill(
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              canvas.withValues(alpha: 0.05),
+                              canvas.withValues(alpha: 0.32),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                // 第二层：中等模糊。
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 104,
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              canvas.withValues(alpha: 0.18),
+                              canvas.withValues(alpha: 0.62),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // 第三层：最深模糊，收口为纯画布色。
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 58,
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              canvas.withValues(alpha: 0.58),
+                              canvas,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // 金刚位：坐在过渡带上，从玻璃里长出来。
@@ -590,6 +644,11 @@ class _Greeting extends StatelessWidget {
                     : '晚上好';
     final now = DateTime.now();
     const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+    final species = switch (pet.speciesLabel) {
+      '狗' => '狗狗',
+      '猫' => '猫咪',
+      _ => pet.speciesLabel,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -600,7 +659,7 @@ class _Greeting extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${now.month}月${now.day}日 周${weekdays[now.weekday - 1]} · '
-          '${HealthCalculator.ageText(pet.birthday)}的${pet.speciesLabel}',
+          '${HealthCalculator.ageText(pet.birthday)}的$species',
           style: AppTheme.subhead(subColor),
         ),
       ],

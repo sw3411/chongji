@@ -149,18 +149,19 @@ class AppTheme {
           backgroundColor: cs.primary,
           foregroundColor: cs.onPrimary,
           shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-          minimumSize: const Size(44, 44),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+          minimumSize: const Size(40, 38),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: cs.primary,
-          side: BorderSide(color: cs.primary, width: 1.4),
+          side: BorderSide(color: cs.primary.withValues(alpha: 0.5), width: 1),
           shape: const StadiumBorder(),
-          minimumSize: const Size(48, 48),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          minimumSize: const Size(40, 38),
+          textStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -227,8 +228,8 @@ class AppTheme {
             displayColor: cs.onSurface,
           )
           .copyWith(
-            bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.55),
-            bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.5),
+            bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.45),
+            bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.42),
             bodySmall:
                 base.textTheme.bodySmall?.copyWith(height: 1.45, fontSize: 12.5),
             titleMedium: base.textTheme.titleMedium
@@ -259,34 +260,34 @@ class AppTheme {
         color: color,
       );
 
-  /// 卡片/列表主标题：14.5/w700。
+  /// 卡片/列表主标题：14/w700。
   static TextStyle cardTitle(Color color) => TextStyle(
-        fontSize: 14.5,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.1,
         height: 1.3,
         color: color,
       );
 
-  /// 正文：13.5/w400。
+  /// 正文：13/w400。
   static TextStyle body(Color color) => TextStyle(
-        fontSize: 13.5,
+        fontSize: 13,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: color,
       );
 
-  /// 次要行：12.5/w400 灰。
+  /// 次要行：12/w400 灰。
   static TextStyle subhead(Color color) => TextStyle(
-        fontSize: 12.5,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
         height: 1.45,
         color: color,
       );
 
-  /// 脚注：11.5/w400。
+  /// 脚注：11/w400。
   static TextStyle footnote(Color color) => TextStyle(
-        fontSize: 11.5,
+        fontSize: 11,
         fontWeight: FontWeight.w400,
         height: 1.4,
         color: color,

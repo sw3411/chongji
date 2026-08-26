@@ -209,8 +209,8 @@ class _PetCapsule extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: AppTheme.softShadow(),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.8)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -404,7 +404,7 @@ class _HeroCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          boxShadow: AppTheme.softShadow(),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
         ),
         child: Column(
           children: [

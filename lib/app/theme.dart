@@ -13,48 +13,50 @@ class AppTheme {
 
   // ---------- 暖萌色板 ----------
 
-  /// 主色：蜜桃橙（操作、选中、强调）。
-  static const Color green = Color(0xFFFF8A4C);
+  /// 主色：陶土橙（低饱和，安静的高级感）。
+  static const Color green = Color(0xFFC97B5A);
 
-  /// 主色亮版（悬浮按钮、发送、今天标记）。
-  static const Color greenLight = Color(0xFFFFA168);
+  static const Color greenLight = Color(0xFFD99C7E);
 
-  /// 深色模式主色（更沉的焦糖橙）。
-  static const Color greenDark = Color(0xFFF0703A);
+  static const Color greenDark = Color(0xFFCB8060);
 
-  /// 深色模式自己发出的气泡（焦糖棕）。
-  static const Color greenBubble = Color(0xFF8A5230);
+  static const Color greenBubble = Color(0xFF5E4536);
 
-  /// 浅色模式自己发出的气泡（奶油杏）。
-  static const Color bubbleOut = Color(0xFFFFE9D2);
+  static const Color bubbleOut = Color(0xFFF3E9E1);
 
-  /// 糖果点缀：薄荷 / 奶油黄 / 樱花粉。
-  static const Color mint = Color(0xFF3BB273);
-  static const Color honey = Color(0xFFFFC64B);
-  static const Color sakura = Color(0xFFFF9BB3);
+  /// 点缀（降饱和）：灰薄荷 / 亚麻金 / 灰玫瑰。
+  static const Color mint = Color(0xFF6E9E85);
+  static const Color honey = Color(0xFFC7A268);
+  static const Color sakura = Color(0xFFC795A1);
 
   /// 主色渐变（中央钮 / 品牌元素）。
-  static const List<Color> primaryGradient = [Color(0xFFFF8A4C), Color(0xFFFF7E79)];
+  static const List<Color> primaryGradient = [Color(0xFFCC7D5E), Color(0xFFC0665D)];
 
-  /// 首页头部渐变（浅奶油橙 → 页面底色）。
-  static const List<Color> headerGradientLight = [Color(0xFFFFEEDC), Color(0xFFFFF7EF)];
-  static const List<Color> headerGradientDark = [Color(0xFF3A2B1F), Color(0xFF211A15)];
+  /// 首页头部渐变（极淡暖白过渡，近不可见）。
+  static const List<Color> headerGradientLight = [Color(0xFFF4EFEA), Color(0xFFFAF8F5)];
+  static const List<Color> headerGradientDark = [Color(0xFF241F1A), Color(0xFF171412)];
 
-  /// 文字：暖棕黑 / 暖灰棕 / 更浅。
-  static const Color ink = Color(0xFF3D2E26);
-  static const Color inkSecondary = Color(0xFF9A8578);
-  static const Color inkTertiary = Color(0xFFBCA99B);
+  /// 毛玻璃表面（悬浮底导用）。
+  static Color glassSurface(bool dark) =>
+      dark ? const Color(0xCC211E1A) : const Color(0xCCFFFFFF);
+  static Color glassBorder(bool dark) =>
+      dark ? const Color(0x1FFFFFFF) : const Color(0x14000000);
 
-  /// 浅色：奶油米底、纯白卡、暖分割线。
-  static const Color lightBg = Color(0xFFFFF7EF);
+  /// 文字：软黑 / 暖灰 / 浅灰（降饱和）。
+  static const Color ink = Color(0xFF2A2521);
+  static const Color inkSecondary = Color(0xFFA39A92);
+  static const Color inkTertiary = Color(0xFFC2BAB2);
+
+  /// 浅色：暖白纸底、纯白卡、细分割线。
+  static const Color lightBg = Color(0xFFFAF8F5);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightDivider = Color(0xFFF3E7DC);
+  static const Color lightDivider = Color(0xFFF0EDE8);
 
-  /// 深色：暖棕夜色。
-  static const Color darkBg = Color(0xFF211A15);
-  static const Color darkSurface = Color(0xFF2D251F);
-  static const Color darkSurfaceAlt = Color(0xFF3A2F27);
-  static const Color darkDivider = Color(0xFF45392F);
+  /// 深色：近黑暖夜。
+  static const Color darkBg = Color(0xFF171412);
+  static const Color darkSurface = Color(0xFF211E1A);
+  static const Color darkSurfaceAlt = Color(0xFF2C2823);
+  static const Color darkDivider = Color(0xFF35312B);
 
   /// 状态色（保持高饱和，微暖化）。
   static const Color warnRed = Color(0xFFF0544F);
@@ -62,8 +64,8 @@ class AppTheme {
   static const Color okGreen = Color(0xFF3BB273);
   static const Color infoBlue = Color(0xFF5B9BD5);
 
-  /// 卡片圆角：精致化微收。
-  static const double cardRadius = 20;
+  /// 卡片圆角：潮汐式安静圆角。
+  static const double cardRadius = 18;
 
   /// 软投影：更轻（避免多卡堆叠的漂浮感），仅核心卡使用。
   static List<BoxShadow> softShadow([Color base = const Color(0x083D2E26)]) => [
@@ -125,7 +127,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
-          fontSize: 19.5,
+          fontSize: 17,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.2,
           color: cs.onSurface,
@@ -199,7 +201,7 @@ class AppTheme {
         showDragHandle: true,
         backgroundColor: cs.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -240,7 +242,7 @@ class AppTheme {
   // ---------- 字号阶梯（页面直接引用，规格不变） ----------
 
   /// 大标题：24/w800，页面主视觉与汇总大数字（字阶压缩版）。
-  static TextStyle largeTitle(Color color, {double size = 24}) => TextStyle(
+  static TextStyle largeTitle(Color color, {double size = 20}) => TextStyle(
         fontSize: size,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
@@ -248,43 +250,43 @@ class AppTheme {
         color: color,
       );
 
-  /// 区块大标题：18.5/w800。
+  /// 区块大标题：16.5/w800。
   static TextStyle title(Color color) => TextStyle(
-        fontSize: 18.5,
+        fontSize: 16.5,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.2,
         height: 1.2,
         color: color,
       );
 
-  /// 卡片/列表主标题：15.5/w700。
+  /// 卡片/列表主标题：14.5/w700。
   static TextStyle cardTitle(Color color) => TextStyle(
-        fontSize: 15.5,
+        fontSize: 14.5,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.1,
         height: 1.3,
         color: color,
       );
 
-  /// 正文：14.5/w400。
+  /// 正文：13.5/w400。
   static TextStyle body(Color color) => TextStyle(
-        fontSize: 14.5,
+        fontSize: 13.5,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: color,
       );
 
-  /// 次要行：13/w400 灰。
+  /// 次要行：12.5/w400 灰。
   static TextStyle subhead(Color color) => TextStyle(
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: FontWeight.w400,
         height: 1.45,
         color: color,
       );
 
-  /// 脚注：12/w400。
+  /// 脚注：11.5/w400。
   static TextStyle footnote(Color color) => TextStyle(
-        fontSize: 12,
+        fontSize: 11.5,
         fontWeight: FontWeight.w400,
         height: 1.4,
         color: color,
@@ -307,7 +309,7 @@ class AppTheme {
       );
 
   /// 大数字：等宽数字 + 加粗（体重、金额、倒计时）。
-  static TextStyle bigNumber(Color color, {double size = 20}) => TextStyle(
+  static TextStyle bigNumber(Color color, {double size = 18}) => TextStyle(
         fontSize: size,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.6,

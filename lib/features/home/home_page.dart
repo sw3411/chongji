@@ -160,7 +160,7 @@ class HomePage extends ConsumerWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 96),
+            const SizedBox(height: 92),
           ],
         ),
       ),
@@ -206,7 +206,7 @@ class _PetCapsule extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showPicker(context),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+        padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(28),
@@ -218,7 +218,7 @@ class _PetCapsule extends StatelessWidget {
             PetAvatar(
               path: pet.avatarPath,
               speciesIcon: Icons.pets,
-              size: 34,
+              size: 28,
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -227,7 +227,7 @@ class _PetCapsule extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style:
-                    AppTheme.cardTitle(cs.onSurface).copyWith(fontSize: 15.5),
+                    AppTheme.cardTitle(cs.onSurface).copyWith(fontSize: 13.5),
               ),
             ),
             const SizedBox(width: 2),
@@ -324,7 +324,7 @@ class _Greeting extends StatelessWidget {
       children: [
         Text(
           '$hello，${pet.name} 🐾',
-          style: AppTheme.largeTitle(cs.onSurface, size: 21.5),
+          style: AppTheme.largeTitle(cs.onSurface, size: 18),
         ),
         const SizedBox(height: 4),
         Text(
@@ -373,7 +373,7 @@ class _HeroCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(value,
-                        style: AppTheme.bigNumber(numberColor, size: 22)),
+                        style: AppTheme.bigNumber(numberColor, size: 19)),
                     if (unit != null) ...[
                       const SizedBox(width: 2),
                       Text(unit, style: AppTheme.caption(cs.onSurfaceVariant)),
@@ -400,7 +400,7 @@ class _HeroCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 16, 6, 12),
+        padding: const EdgeInsets.fromLTRB(6, 14, 6, 11),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -472,7 +472,9 @@ class _HeroCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      textStyle: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w700),
                     ),
                     onPressed: () => context.push('/moment/new'),
                     icon: const Icon(Icons.photo_camera_rounded, size: 17),
@@ -500,9 +502,10 @@ class _HeroCard extends StatelessWidget {
     return Expanded(
       child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           side: BorderSide(color: cs.outlineVariant),
           foregroundColor: cs.onSurface,
+          textStyle: const TextStyle(fontSize: 12.5),
         ),
         onPressed: () => context.push('/health/record/new', extra: type),
         icon: Icon(icon, size: 17, color: cs.primary),
@@ -528,24 +531,15 @@ class _QuickActions extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      colors: colors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight),
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                        color: colors[1].withValues(alpha: 0.28),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4)),
-                  ],
+                  color: colors[0].withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: Colors.white, size: 21),
+                child: Icon(icon, color: colors[0], size: 19),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
               Text(label,
                   style: AppTheme.footnote(cs.onSurface)
                       .copyWith(fontWeight: FontWeight.w600)),
@@ -600,7 +594,7 @@ class _HomeSection extends StatelessWidget {
                 Expanded(
                   child: Text(title,
                       style:
-                          AppTheme.title(cs.onSurface).copyWith(fontSize: 16.5, letterSpacing: 0.1)),
+                          AppTheme.title(cs.onSurface).copyWith(fontSize: 15, letterSpacing: 0.2)),
                 ),
                 if (trailing != null) trailing!,
               ],
@@ -661,7 +655,7 @@ class _MomentCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/moment/${moment.id}/detail'),
       child: Container(
-        width: 118,
+        width: 108,
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(18),
@@ -672,7 +666,7 @@ class _MomentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 88,
+              height: 78,
               width: double.infinity,
               child: hasPhoto
                   ? Image.file(
@@ -766,13 +760,13 @@ class _DueGroup extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: kindColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(13),
+              color: kindColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(icon, size: 19, color: kindColor),
+            child: Icon(icon, size: 17, color: kindColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -887,7 +881,7 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
     final aiReady = ref.watch(aiConfigProvider).isReady;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -905,15 +899,15 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                       colors: AppTheme.primaryGradient),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Icon(Icons.auto_awesome_rounded,
-                    size: 16, color: Colors.white),
+                    size: 14, color: Colors.white),
               ),
               const SizedBox(width: 10),
               Expanded(

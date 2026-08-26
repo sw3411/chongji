@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,35 +25,36 @@ class AppShell extends StatelessWidget {
           index,
           initialLocation: index == navigationShell.currentIndex,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 7),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 选中时图标背后加胶囊底（WhatsApp 选中 tab 样式）。
+              // 选中时图标背后加胶囊底（潮汐式轻量选中态）。
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 2),
                 decoration: selected
                     ? BoxDecoration(
-                        color: dark ? AppTheme.greenDark : AppTheme.green,
-                        borderRadius: BorderRadius.circular(12),
+                        color: cs.primary.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(9),
                       )
                     : null,
                 child: Icon(
                   selected ? activeIcon : icon,
-                  size: 22,
-                  color: selected ? Colors.white : color,
+                  size: 19,
+                  color: selected ? cs.primary : color,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 9.5,
                   color: color,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  letterSpacing: 0.2,
                 ),
               ),
             ],
@@ -60,58 +63,76 @@ class AppShell extends StatelessWidget {
       );
     }
 
+    Widget centerButton() {
+      return GestureDetector(
+        onTap: () => _showAddMenu(context),
+        child: Semantics(
+          label: '记一笔',
+          button: true,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: AppTheme.primaryGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.green.withValues(alpha: 0.30),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.pets, color: Colors.white, size: 20),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: BottomAppBar(
-        elevation: 0,
-        color: dark ? AppTheme.darkSurface : AppTheme.lightSurface,
-        child: Row(
-          children: [
-            Expanded(
-                child: Center(
-                    child: navItem(Icons.home_outlined, Icons.home_rounded,
-                        '首页', 0))),
-            Expanded(
-                child: Center(
-                    child: navItem(Icons.monitor_heart_outlined,
-                        Icons.monitor_heart_rounded, '健康', 1))),
-            Expanded(
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => _showAddMenu(context),
-                  child: Semantics(
-                    label: '记一笔',
-                    button: true,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: AppTheme.primaryGradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.softShadow(
-                            const Color(0x33FF8A4C)),
-                      ),
-                      child:
-                          const Icon(Icons.pets, color: Colors.white, size: 26),
-                    ),
-                  ),
-                ),
+      extendBody: true,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          // 毛玻璃：背景模糊 + 半透明表面 + 发丝描边。
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppTheme.glassSurface(dark),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppTheme.glassBorder(dark)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                      child: Center(
+                          child: navItem(Icons.home_outlined,
+                              Icons.home_rounded, '首页', 0))),
+                  Expanded(
+                      child: Center(
+                          child: navItem(Icons.monitor_heart_outlined,
+                              Icons.monitor_heart_rounded, '健康', 1))),
+                  Expanded(child: Center(child: centerButton())),
+                  Expanded(
+                      child: Center(
+                          child: navItem(Icons.restaurant_outlined,
+                              Icons.restaurant_rounded, '饮食', 2))),
+                  Expanded(
+                      child: Center(
+                          child: navItem(Icons.photo_camera_back_outlined,
+                              Icons.photo_camera_back_rounded, '时刻', 3))),
+                ],
               ),
             ),
-            Expanded(
-                child: Center(
-                    child: navItem(Icons.restaurant_outlined,
-                        Icons.restaurant_rounded, '饮食', 2))),
-            Expanded(
-                child: Center(
-                    child: navItem(Icons.photo_camera_back_outlined,
-                        Icons.photo_camera_back_rounded, '时刻', 3))),
-          ],
+          ),
         ),
       ),
     );

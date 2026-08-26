@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -92,39 +93,39 @@ class TypeChip extends StatelessWidget {
   }
 }
 
-/// 健康记录类型的徽标配色。
+/// 健康记录类型的徽标配色（低饱和家族，杜绝彩虹感）。
 Color recordTypeColor(HealthRecordType type) => switch (type) {
-      HealthRecordType.weight => AppTheme.infoBlue,
-      HealthRecordType.bcs => AppTheme.infoBlue,
-      HealthRecordType.vaccine => AppTheme.okGreen,
-      HealthRecordType.dewormIn => const Color(0xFF8B5CF6),
-      HealthRecordType.dewormOut => const Color(0xFF8B5CF6),
-      HealthRecordType.vetVisit => AppTheme.warnRed,
-      HealthRecordType.medication => AppTheme.warnAmber,
-      HealthRecordType.surgery => AppTheme.warnRed,
-      HealthRecordType.symptom => AppTheme.warnAmber,
+      HealthRecordType.weight => AppTheme.green,
+      HealthRecordType.bcs => AppTheme.green,
+      HealthRecordType.vaccine => AppTheme.sage,
+      HealthRecordType.dewormIn => AppTheme.mauve,
+      HealthRecordType.dewormOut => AppTheme.mauve,
+      HealthRecordType.vetVisit => AppTheme.rose,
+      HealthRecordType.medication => AppTheme.ochre,
+      HealthRecordType.surgery => AppTheme.rose,
+      HealthRecordType.symptom => AppTheme.ochre,
       HealthRecordType.other => AppTheme.inkSecondary,
     };
 
 /// 时刻类型的徽标配色。
 Color momentTypeColor(MomentType type) => switch (type) {
-      MomentType.birthday => const Color(0xFFEC4899),
-      MomentType.outing => AppTheme.okGreen,
-      MomentType.grooming => AppTheme.infoBlue,
-      MomentType.adoption => const Color(0xFFF97316),
-      MomentType.anniversary => const Color(0xFFF43F5E),
-      MomentType.custom => AppTheme.inkSecondary,
+      MomentType.birthday => AppTheme.rose,
+      MomentType.outing => AppTheme.sage,
+      MomentType.grooming => AppTheme.steel,
+      MomentType.adoption => AppTheme.ochre,
+      MomentType.anniversary => AppTheme.mauve,
+      MomentType.custom => AppTheme.taupe,
     };
 
 /// 消费分类徽标配色。
 Color expenseCategoryColor(ExpenseCategory c) => switch (c) {
-      ExpenseCategory.food => AppTheme.okGreen,
-      ExpenseCategory.treats => const Color(0xFFD946EF),
-      ExpenseCategory.medical => AppTheme.warnRed,
-      ExpenseCategory.grooming => AppTheme.infoBlue,
-      ExpenseCategory.toys => const Color(0xFFF97316),
-      ExpenseCategory.supplies => AppTheme.inkSecondary,
-      ExpenseCategory.insurance => const Color(0xFF14B8A6),
+      ExpenseCategory.food => AppTheme.sage,
+      ExpenseCategory.treats => AppTheme.mauve,
+      ExpenseCategory.medical => AppTheme.rose,
+      ExpenseCategory.grooming => AppTheme.steel,
+      ExpenseCategory.toys => AppTheme.ochre,
+      ExpenseCategory.supplies => AppTheme.taupe,
+      ExpenseCategory.insurance => AppTheme.olive,
       ExpenseCategory.other => AppTheme.inkSecondary,
     };
 
@@ -162,9 +163,9 @@ IconData expenseCategoryIcon(ExpenseCategory c) => switch (c) {
       ExpenseCategory.other => Icons.more_horiz,
     };
 
-/// 强视觉选择芯片（表单选项专用，参考 wuji 的 PillChip）：
-/// - 选中：实色底 + 白色加粗字，一眼锁定
-/// - 未选中：浅色底(8%)+ 描边 + 彩色字，与选中形成强对比
+/// 强视觉选择芯片（表单选项专用）：
+/// - 选中：陶土淡染 + 强调色文字
+/// - 未选中：白瓷片底 + 墨色文字（与全局卡片同一语言，无描边）
 class SelectChip extends StatelessWidget {
   const SelectChip(
     this.label, {
@@ -183,21 +184,19 @@ class SelectChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final base = color ?? cs.primary;
-    final fg = selected ? Colors.white : base;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final base = color ?? Theme.of(context).colorScheme.primary;
+    final fg = selected ? base : (dark ? Colors.white70 : AppTheme.ink);
     return GestureDetector(
       onTap: onSelected == null ? null : () => onSelected!(true),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? base : base.withValues(alpha: 0.08),
-          border: Border.all(
-            color: selected ? base : base.withValues(alpha: 0.35),
-            width: 1.2,
-          ),
-          borderRadius: BorderRadius.circular(20),
+          color: selected
+              ? base.withValues(alpha: 0.13)
+              : (dark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -214,7 +213,7 @@ class SelectChip extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: fg,
               ),
             ),
@@ -225,7 +224,7 @@ class SelectChip extends StatelessWidget {
   }
 }
 
-/// 日期药丸：底色 + 加粗等宽数字，用于行尾时间、到期日等。
+/// 日期药丸：淡染底 + 等宽数字。
 class DatePill extends StatelessWidget {
   const DatePill(
     this.text, {
@@ -240,20 +239,20 @@ class DatePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final base = color ?? cs.onSurfaceVariant;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final base = color ?? (dark ? Colors.white54 : AppTheme.inkSecondary);
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 7 : 9, vertical: compact ? 2 : 3),
       decoration: BoxDecoration(
         color: base.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: compact ? 11 : 12,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: base,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -304,8 +303,7 @@ class FormSection extends StatelessWidget {
   }
 }
 
-/// 到期天数强调块：大号加粗数字 + 天，底色随紧急程度变化；
-/// 传入 [tone]（类型主色）时未过期部分用类型色，过期仍为红色警示。
+/// 到期天数徽标：淡染胶囊 + 等宽数字，颜色只表达紧急程度。
 class DueBadge extends StatelessWidget {
   const DueBadge({super.key, required this.daysLeft, this.tone});
 
@@ -332,16 +330,16 @@ class DueBadge extends StatelessWidget {
       label = '$daysLeft天';
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
           color: c,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -383,7 +381,7 @@ class InfoRow extends StatelessWidget {
   }
 }
 
-/// 数字突出展示的小卡片。
+/// 数字突出展示的小卡片（白瓷片，大数字默认墨色）。
 class MetricTile extends StatelessWidget {
   const MetricTile({
     super.key,
@@ -425,7 +423,7 @@ class MetricTile extends StatelessWidget {
                   value,
                   style: AppTheme.bigNumber(
                     accent ? cs.primary : cs.onSurface,
-                    size: 22,
+                    size: 21,
                   ),
                 ),
               ),
@@ -435,11 +433,72 @@ class MetricTile extends StatelessWidget {
                   subValue!,
                   style: AppTheme.caption(
                           subValueColor ?? cs.onSurfaceVariant)
-                      .copyWith(fontWeight: subValueColor == null ? null : FontWeight.w700),
+                      .copyWith(fontWeight: subValueColor == null ? null : FontWeight.w600),
                 ),
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 场景卡背景装饰折线：无轴无网格无交互的白色 sparkline，
+/// 铺在渐变大卡底部当纹理（首页/健康页共用）。
+class SparklineBg extends StatelessWidget {
+  const SparklineBg({super.key, required this.spots, this.opacity = 0.14});
+
+  final List<FlSpot> spots;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    if (spots.length < 2) return const SizedBox.shrink();
+    final minX = spots.first.x;
+    var maxX = spots.last.x;
+    if (maxX <= minX) maxX = minX + 1; // 同日两条记录时避免零宽。
+    final minY = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
+    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final pad = (maxY - minY).clamp(0.1, 10.0) * 0.35;
+    return Opacity(
+      opacity: opacity,
+      child: LineChart(
+        LineChartData(
+          minX: minX,
+          maxX: maxX,
+          minY: minY - pad,
+          maxY: maxY + pad,
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(
+            topTitles: AxisTitles(),
+            rightTitles: AxisTitles(),
+            bottomTitles: AxisTitles(),
+            leftTitles: AxisTitles(),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: const LineTouchData(enabled: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              preventCurveOverShooting: true,
+              color: Colors.white,
+              barWidth: 1.5,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.35),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -501,21 +560,21 @@ void showAutoToast(
 }
 
 /// AI 生成内容的统一 Markdown 排版：
-/// - **加粗** → 放大加粗的绿色关键数字
-/// - 正文 13.5/1.75，标题 15.5
+/// - **加粗** → 强调色关键数字（尺寸克制，与正文协调不割裂）
+/// - 正文 13.5/1.7，标题 15
 MarkdownStyleSheet digestMarkdownStyle(BuildContext context) {
   final cs = Theme.of(context).colorScheme;
   return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-    p: const TextStyle(fontSize: 13.5, height: 1.75),
+    p: const TextStyle(fontSize: 13.5, height: 1.7),
     strong: TextStyle(
-      fontSize: 16.5,
-      fontWeight: FontWeight.w800,
+      fontSize: 14.5,
+      fontWeight: FontWeight.w700,
       color: cs.primary,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
-    listBullet: const TextStyle(fontSize: 13.5, height: 1.75),
-    h2: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
-    h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+    listBullet: const TextStyle(fontSize: 13.5, height: 1.7),
+    h2: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+    h3: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
   );
 }
 

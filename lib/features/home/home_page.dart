@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import '../../app/image_store.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/ai/ai_client.dart';
+import '../../domain/models/enums.dart';
 import '../../domain/models/health_record.dart';
 import '../../domain/models/moment.dart';
 import '../../domain/models/pet.dart';
@@ -16,8 +18,8 @@ import '../../domain/services/health_calculator.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/sync_button.dart';
 
-/// 首页（出行卡风格）：渐变头部 + 宠物胶囊切换 + 数据大卡 + 金刚位 +
-/// AI 洞察 + 到期提醒 + 横向时刻流。
+/// 首页：环境光渐变头部 + 宠物胶囊切换 + 渐变场景卡（大数字）+
+/// 单色金刚位 + 白瓷片分区（AI 洞察 / 到期提醒 / 横向时刻流）。
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -28,13 +30,13 @@ class HomePage extends ConsumerWidget {
 
     if (pets.isEmpty) {
       return Scaffold(
-        body: _HeaderGradient(
+        body: _AmbientHeader(
           child: Column(
             children: [
               SizedBox(height: MediaQuery.paddingOf(context).top + 16),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: const [SyncButton()],
+                children: [SyncButton()],
               ),
               Expanded(
                 child: EmptyView(
@@ -67,11 +69,20 @@ class HomePage extends ConsumerWidget {
       ..sort((a, b) => b.date.compareTo(a.date));
     final dues = buildDueItems(pet, records);
     final weight = HealthCalculator.latestWeight(records);
+    final weights = records
+        .where((r) => r.type == HealthRecordType.weight && r.value != null)
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
     final bcs = HealthCalculator.latestBcs(records);
     final weightChange = HealthCalculator.weightChange(records, 30);
     final nextDue = dues.isEmpty
         ? null
         : dues.reduce((a, b) => a.daysLeft <= b.daysLeft ? a : b);
+    // 场景卡背景 sparkline 的坐标点。
+    final spark = [
+      for (final r in weights)
+        FlSpot(r.date.millisecondsSinceEpoch.toDouble(), r.value!),
+    ];
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -80,7 +91,7 @@ class HomePage extends ConsumerWidget {
         label: const Text('AI 助手'),
         tooltip: 'AI 助手',
       ),
-      body: _HeaderGradient(
+      body: _AmbientHeader(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -107,21 +118,20 @@ class HomePage extends ConsumerWidget {
               child: _Greeting(pet: pet),
             ),
             const SizedBox(height: 10),
-            // 数据大卡。
-            _HeroCard(
-              pet: pet,
+            // 渐变场景卡：数据主视觉。
+            _SceneCard(
+              spark: spark,
               weight: weight?.value,
               weightDelta: weightChange?.$1,
               bcs: bcs?.value?.toInt(),
               nextDue: nextDue,
             ),
             const SizedBox(height: 16),
-            // 金刚位。
+            // 金刚位（单色）。
             const _QuickActions(),
-            const SizedBox(height: 8),
             // AI 洞察。
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            _HomeSection(
+              title: 'AI 洞察',
               child: _InsightCard(pet: pet, records: records),
             ),
             // 到期提醒。
@@ -129,15 +139,19 @@ class HomePage extends ConsumerWidget {
               title: '到期提醒',
               trailing: dues.isEmpty
                   ? null
-                  : TextButton(
-                      onPressed: () => context.go('/health'),
-                      child: const Text('全部'),
+                  : GestureDetector(
+                      onTap: () => context.go('/health'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text('全部',
+                            style: AppTheme.footnote(
+                                dark ? Colors.white54 : AppTheme.inkSecondary)),
+                      ),
                     ),
               child: dues.isEmpty
-                  ? const _MiniCard(
+                  ? _MiniCard(
                       icon: Icons.verified_rounded,
-                      color: AppTheme.okGreen,
-                      text: '近期没有疫苗 / 驱虫 / 生日到期，一切都在计划中 👌',
+                      text: '近期没有疫苗 / 驱虫 / 生日到期，一切都在计划中',
                     )
                   : _DueGroup(dues: dues.take(3).toList()),
             ),
@@ -145,22 +159,27 @@ class HomePage extends ConsumerWidget {
             if (petMoments.isNotEmpty)
               _HomeSection(
                 title: '最近时刻',
-                trailing: TextButton(
-                  onPressed: () => context.go('/timeline'),
-                  child: const Text('全部'),
+                trailing: GestureDetector(
+                  onTap: () => context.go('/timeline'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text('全部',
+                        style: AppTheme.footnote(
+                            dark ? Colors.white54 : AppTheme.inkSecondary)),
+                  ),
                 ),
                 child: SizedBox(
-                  height: 168,
+                  height: 148,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: petMoments.take(10).length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (context, index) =>
                         _MomentCard(moment: petMoments[index]),
                   ),
                 ),
               ),
-            const SizedBox(height: 92),
+            const SizedBox(height: 96),
           ],
         ),
       ),
@@ -168,9 +187,9 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-/// 头部渐变容器：奶油橙渐变过渡到页面底色。
-class _HeaderGradient extends StatelessWidget {
-  const _HeaderGradient({required this.child});
+/// 环境光头部：极淡暖光渐变过渡进画布。
+class _AmbientHeader extends StatelessWidget {
+  const _AmbientHeader({required this.child});
 
   final Widget child;
 
@@ -185,7 +204,7 @@ class _HeaderGradient extends StatelessWidget {
               : AppTheme.headerGradientLight,
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: const [0, 0.32],
+          stops: const [0, 0.3],
         ),
       ),
       child: child,
@@ -193,7 +212,7 @@ class _HeaderGradient extends StatelessWidget {
   }
 }
 
-/// 宠物身份胶囊：头像 + 名字 + 下拉切换（参考滴滴宠物头部）。
+/// 宠物身份胶囊：白瓷片 + 头像 + 名字 + 下拉切换。
 class _PetCapsule extends StatelessWidget {
   const _PetCapsule({required this.pet, required this.pets});
 
@@ -209,8 +228,7 @@ class _PetCapsule extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.8)),
+          borderRadius: BorderRadius.circular(22),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -306,7 +324,7 @@ class _Greeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final hour = DateTime.now().hour;
     final hello = hour < 6
         ? '夜深了'
@@ -323,31 +341,34 @@ class _Greeting extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$hello，${pet.name} 🐾',
-          style: AppTheme.largeTitle(cs.onSurface, size: 18),
+          '$hello，${pet.name}',
+          style: AppTheme.largeTitle(dark ? Colors.white : AppTheme.ink,
+              size: 19),
         ),
         const SizedBox(height: 4),
         Text(
           '${now.month}月${now.day}日 周${weekdays[now.weekday - 1]} · '
           '${HealthCalculator.ageText(pet.birthday)}的${pet.speciesLabel}',
-          style: AppTheme.subhead(cs.onSurfaceVariant),
+          style: AppTheme.subhead(
+              dark ? Colors.white38 : AppTheme.inkSecondary),
         ),
       ],
     );
   }
 }
 
-/// 数据大卡：体重 / 体型 / 下次到期 三栏 + 底部快捷记录按钮。
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({
-    required this.pet,
+/// 渐变场景卡：大数字体重 + 背景 sparkline + 体型/到期次级信息 +
+/// 快捷记录（与健康页 _WellnessCard 同一视觉语言）。
+class _SceneCard extends StatelessWidget {
+  const _SceneCard({
+    required this.spark,
     this.weight,
     this.weightDelta,
     this.bcs,
     this.nextDue,
   });
 
-  final Pet pet;
+  final List<FlSpot> spark;
   final double? weight;
   final double? weightDelta;
   final int? bcs;
@@ -355,175 +376,225 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    Widget stat(String label, String value, String? unit, String? sub,
-        Color? subColor, Color numberColor, VoidCallback onTap) {
-      return Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Column(
-            children: [
-              Text(label, style: AppTheme.label(cs.onSurfaceVariant)),
-              const SizedBox(height: 6),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(value,
-                        style: AppTheme.bigNumber(numberColor, size: 19)),
-                    if (unit != null) ...[
-                      const SizedBox(width: 2),
-                      Text(unit, style: AppTheme.caption(cs.onSurfaceVariant)),
-                    ],
-                  ],
-                ),
-              ),
-              if (sub != null) ...[
-                const SizedBox(height: 3),
-                Text(
-                  sub,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.captionSm(subColor ?? cs.onSurfaceVariant)
-                      .copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final onCard = Colors.white.withValues(alpha: 0.95);
+    final onCardFaint = Colors.white.withValues(alpha: 0.55);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 14, 6, 11),
         decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
+          gradient: LinearGradient(
+            colors: dark
+                ? AppTheme.sceneGradientDark
+                : AppTheme.sceneGradientLight,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
         ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                stat(
-                  '当前体重',
-                  weight == null ? '—' : weight!.toStringAsFixed(1),
-                  weight == null ? null : 'kg',
-                  weightDelta == null
-                      ? (weight == null ? '去记录' : null)
-                      : '30天 ${weightDelta! >= 0 ? "+" : ""}${weightDelta!.toStringAsFixed(2)}',
-                  weightDelta == null || weightDelta == 0
-                      ? null
-                      : weightDelta! > 0
-                          ? AppTheme.warnRed
-                          : AppTheme.okGreen,
-                  weight == null ? cs.onSurface : cs.primary,
-                  () => context.push('/health/record/new', extra: 'weight'),
-                ),
-                _statDivider(cs),
-                stat(
-                  '体型评分',
-                  bcs == null ? '—' : '$bcs',
-                  bcs == null ? null : '/9',
-                  bcs == null ? '未评估' : null,
-                  null,
-                  bcs == null ? cs.onSurface : AppTheme.mint,
-                  () => context.push('/health/record/new', extra: 'bcs'),
-                ),
-                _statDivider(cs),
-                stat(
-                  '下次到期',
-                  nextDue == null
-                      ? '—'
-                      : '${nextDue!.daysLeft < 0 ? 0 : nextDue!.daysLeft}',
-                  nextDue == null ? null : '天',
-                  nextDue?.title,
-                  nextDue == null
-                      ? null
-                      : nextDue!.daysLeft <= 0
-                          ? AppTheme.warnRed
-                          : nextDue!.daysLeft <= 7
-                              ? AppTheme.warnAmber
-                              : AppTheme.okGreen,
-                  nextDue == null
-                      ? cs.onSurface
-                      : nextDue!.daysLeft <= 0
-                          ? AppTheme.warnRed
-                          : AppTheme.honey,
-                  () => context.go('/health'),
-                ),
-              ],
-            ),
-            Divider(
-                color: cs.outlineVariant.withValues(alpha: 0.6), height: 22),
-            Row(
-              children: [
-                _quickChip(
-                    context, Icons.scale_rounded, '记体重', 'weight'),
-                const SizedBox(width: 8),
-                _quickChip(
-                    context, Icons.vaccines_rounded, '疫苗/驱虫', 'vaccine'),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      textStyle: const TextStyle(
-                          fontSize: 12.5, fontWeight: FontWeight.w700),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              if (spark.length >= 2)
+                Positioned.fill(child: SparklineBg(spots: spark)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 体重大数字。
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('当前体重',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    letterSpacing: 2,
+                                    color: onCardFaint)),
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  weight == null
+                                      ? '—'
+                                      : weight!.toStringAsFixed(1),
+                                  style: TextStyle(
+                                    fontSize: 46,
+                                    fontWeight: FontWeight.w300,
+                                    letterSpacing: -1.5,
+                                    height: 1.05,
+                                    color: onCard,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text('kg',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w300,
+                                        color: onCardFaint)),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        // 30 天变化胶囊。
+                        if (weightDelta != null && weightDelta != 0)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '30天 ${weightDelta! >= 0 ? "+" : ""}${weightDelta!.toStringAsFixed(2)}kg',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: onCard,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures()
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    onPressed: () => context.push('/moment/new'),
-                    icon: const Icon(Icons.photo_camera_rounded, size: 17),
-                    label: const Text('记时刻'),
-                  ),
+                    const SizedBox(height: 16),
+                    // 发丝分隔线。
+                    Container(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                    const SizedBox(height: 12),
+                    // 体型 + 下次到期。
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => context.push('/health/record/new',
+                                extra: 'bcs'),
+                            behavior: HitTestBehavior.opaque,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('体型 BCS',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        letterSpacing: 1.5,
+                                        color: onCardFaint)),
+                                const SizedBox(height: 3),
+                                Text(
+                                  bcs == null ? '未评估' : '${bcs!}/9',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w400,
+                                    color: onCard,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          margin: const EdgeInsets.symmetric(horizontal: 14),
+                          color: Colors.white.withValues(alpha: 0.14),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => context.go('/health'),
+                            behavior: HitTestBehavior.opaque,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('下次到期',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        letterSpacing: 1.5,
+                                        color: onCardFaint)),
+                                const SizedBox(height: 3),
+                                Text(
+                                  nextDue == null
+                                      ? '近期无'
+                                      : '${nextDue!.title} · ${nextDue!.daysLeft < 0 ? '已过' : '${nextDue!.daysLeft}天'}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w400,
+                                    color: onCard,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // 记时刻主按钮。
+                        GestureDetector(
+                          onTap: () => context.push('/moment/new'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.25)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.photo_camera_outlined,
+                                    size: 14, color: onCard),
+                                const SizedBox(width: 4),
+                                Text('记时刻',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: onCard)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _statDivider(ColorScheme cs) => Container(
-        width: 1,
-        height: 36,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        color: cs.outlineVariant.withValues(alpha: 0.6),
-      );
-
-  Widget _quickChip(BuildContext context, IconData icon, String label,
-      String type) {
-    final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          side: BorderSide(color: cs.outlineVariant),
-          foregroundColor: cs.onSurface,
-          textStyle: const TextStyle(fontSize: 12.5),
-        ),
-        onPressed: () => context.push('/health/record/new', extra: type),
-        icon: Icon(icon, size: 17, color: cs.primary),
-        label: Text(label, style: const TextStyle(fontSize: 13.5)),
       ),
     );
   }
 }
 
-/// 金刚位：渐变圆角方块 + 小字。
+/// 金刚位：白瓷片圆标 + 单色图标（导航保持安静，色彩留给数据）。
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    Widget action(IconData icon, String label, List<Color> colors,
-        VoidCallback onTap) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = dark ? Colors.white70 : AppTheme.ink;
+    Widget action(IconData icon, String label, VoidCallback onTap) {
       return Expanded(
         child: GestureDetector(
           onTap: onTap,
@@ -531,18 +602,22 @@ class _QuickActions extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: colors[0].withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(14),
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: Icon(icon, color: colors[0], size: 19),
+                child: Icon(icon, color: iconColor, size: 19),
               ),
-              const SizedBox(height: 5),
-              Text(label,
-                  style: AppTheme.footnote(cs.onSurface)
-                      .copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: AppTheme.footnote(dark ? Colors.white60 : AppTheme.ink)
+                    .copyWith(fontWeight: FontWeight.w500),
+              ),
             ],
           ),
         ),
@@ -553,17 +628,10 @@ class _QuickActions extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          action(Icons.restaurant_rounded, 'AI 饮食',
-              [AppTheme.green, const Color(0xFFFF7E79)],
-              () => context.go('/diet')),
-          action(Icons.event_rounded, '日历',
-              [AppTheme.mint, const Color(0xFF2E9E6B)],
-              () => context.push('/calendar')),
-          action(Icons.savings_rounded, '账本',
-              [AppTheme.honey, const Color(0xFFF5A83C)],
-              () => context.push('/expenses')),
-          action(Icons.auto_awesome_rounded, '周报',
-              [AppTheme.sakura, const Color(0xFFF27D9C)],
+          action(Icons.restaurant_outlined, 'AI 饮食', () => context.go('/diet')),
+          action(Icons.event_outlined, '日历', () => context.push('/calendar')),
+          action(Icons.savings_outlined, '账本', () => context.push('/expenses')),
+          action(Icons.auto_awesome_outlined, '周报',
               () => context.push('/ai/weekly')),
         ],
       ),
@@ -571,7 +639,7 @@ class _QuickActions extends StatelessWidget {
   }
 }
 
-/// 首页分区：标题 + 内容。
+/// 首页分区：小标题 + 内容（统一 16 边距与节律）。
 class _HomeSection extends StatelessWidget {
   const _HomeSection({required this.title, this.trailing, required this.child});
 
@@ -581,9 +649,9 @@ class _HomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.only(top: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -592,9 +660,10 @@ class _HomeSection extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(title,
-                      style:
-                          AppTheme.title(cs.onSurface).copyWith(fontSize: 15, letterSpacing: 0.2)),
+                  child: Text(
+                      title,
+                      style: AppTheme.cardTitle(
+                          dark ? Colors.white : AppTheme.ink)),
                 ),
                 if (trailing != null) trailing!,
               ],
@@ -611,36 +680,41 @@ class _HomeSection extends StatelessWidget {
   }
 }
 
-/// 轻提示小卡。
+/// 轻提示小卡（白瓷片）。
 class _MiniCard extends StatelessWidget {
-  const _MiniCard({required this.icon, required this.color, required this.text});
+  const _MiniCard({required this.icon, required this.text});
 
   final IconData icon;
-  final Color color;
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: color),
+          Icon(icon,
+              size: 17,
+              color: dark ? Colors.white54 : AppTheme.inkSecondary),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: AppTheme.subhead(cs.onSurface))),
+          Expanded(
+              child: Text(
+                  text,
+                  style: AppTheme.subhead(
+                      dark ? Colors.white60 : AppTheme.ink))),
         ],
       ),
     );
   }
 }
 
-/// 横向时刻卡：竖版照片 + 标题。
+/// 横向时刻卡：圆角照片 + 悬浮文字（去盒子感，照片即卡片）。
 class _MomentCard extends StatelessWidget {
   const _MomentCard({required this.moment});
 
@@ -648,26 +722,25 @@ class _MomentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final color = momentTypeColor(moment.type);
     final hasPhoto = moment.imagePaths.isNotEmpty &&
         ImageStore.exists(moment.imagePaths.first);
     return GestureDetector(
       onTap: () => context.push('/moment/${moment.id}/detail'),
-      child: Container(
-        width: 108,
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: 118,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 78,
+            Container(
+              height: 88,
               width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: color.withValues(alpha: 0.16),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: hasPhoto
                   ? Image.file(
                       File(moment.imagePaths.first),
@@ -677,7 +750,7 @@ class _MomentCard extends StatelessWidget {
                   : _coverPlaceholder(color),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.fromLTRB(2, 7, 2, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -685,13 +758,14 @@ class _MomentCard extends StatelessWidget {
                     moment.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTheme.cardTitle(cs.onSurface)
-                        .copyWith(fontSize: 13.5),
+                    style: AppTheme.footnote(dark ? Colors.white : AppTheme.ink)
+                        .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     '${moment.date.month}/${moment.date.day} · ${moment.type.label}',
-                    style: AppTheme.captionSm(color),
+                    style: AppTheme.captionSm(
+                        dark ? Colors.white38 : AppTheme.inkSecondary),
                   ),
                 ],
               ),
@@ -702,37 +776,34 @@ class _MomentCard extends StatelessWidget {
     );
   }
 
-  Widget _coverPlaceholder(Color color) => Container(
-        color: color.withValues(alpha: 0.14),
-        child: Center(
-          child: Icon(Icons.photo_outlined,
-              size: 26, color: color.withValues(alpha: 0.6)),
-        ),
+  Widget _coverPlaceholder(Color color) => Center(
+        child: Icon(Icons.photo_outlined,
+            size: 26, color: color.withValues(alpha: 0.6)),
       );
 }
 
-/// 到期提醒组：一张卡内多行分区（细分隔线），避免多卡堆叠。
+/// 到期提醒组：一张白瓷片内多行细分隔线；图标单色，颜色只留给状态徽标。
 class _DueGroup extends StatelessWidget {
   const _DueGroup({required this.dues});
 
   final List<DueItem> dues;
 
-  static const _kindMeta = <String, (Color, IconData)>{
-    'birthday': (Color(0xFFFF7D9E), Icons.cake_rounded),
-    'adoption': (Color(0xFFF5A83C), Icons.home_rounded),
-    'vaccine': (Color(0xFF5B9BD5), Icons.vaccines_rounded),
-    'dewormIn': (Color(0xFF8B7BD8), Icons.shield_rounded),
-    'dewormOut': (Color(0xFF8B7BD8), Icons.shield_outlined),
-    'weight': (Color(0xFF5B9BD5), Icons.monitor_weight_rounded),
-    'bcs': (Color(0xFFF5A83C), Icons.accessibility_new_rounded),
+  static const _kindIcon = <String, IconData>{
+    'birthday': Icons.cake_rounded,
+    'adoption': Icons.home_rounded,
+    'vaccine': Icons.vaccines_rounded,
+    'dewormIn': Icons.shield_rounded,
+    'dewormOut': Icons.shield_outlined,
+    'weight': Icons.monitor_weight_rounded,
+    'bcs': Icons.accessibility_new_rounded,
   };
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: Column(
@@ -741,9 +812,9 @@ class _DueGroup extends StatelessWidget {
             if (i > 0)
               Divider(
                   height: 1,
-                  indent: 66,
+                  indent: 60,
                   endIndent: 14,
-                  color: cs.outlineVariant.withValues(alpha: 0.7)),
+                  color: dark ? Colors.white.withValues(alpha: 0.06) : AppTheme.lightDivider),
             _dueRow(context, dues[i]),
           ],
         ],
@@ -752,9 +823,8 @@ class _DueGroup extends StatelessWidget {
   }
 
   Widget _dueRow(BuildContext context, DueItem due) {
-    final cs = Theme.of(context).colorScheme;
-    final (kindColor, icon) =
-        _kindMeta[due.kind] ?? (cs.primary, Icons.schedule_rounded);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final icon = _kindIcon[due.kind] ?? Icons.schedule_rounded;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -763,38 +833,43 @@ class _DueGroup extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: kindColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(11),
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : AppTheme.lightDivider,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 17, color: kindColor),
+            child: Icon(icon,
+                size: 17,
+                color: dark ? Colors.white60 : AppTheme.inkSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(due.title, style: AppTheme.cardTitle(cs.onSurface)),
+                Text(due.title,
+                    style: AppTheme.cardTitle(
+                        dark ? Colors.white : AppTheme.ink)),
                 const SizedBox(height: 1),
                 Text(
                   '${due.date.month}月${due.date.day}日 到期',
                   style: TextStyle(
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurfaceVariant,
+                    color: dark ? Colors.white38 : AppTheme.inkSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
           ),
-          DueBadge(daysLeft: due.daysLeft, tone: kindColor),
+          DueBadge(daysLeft: due.daysLeft),
         ],
       ),
     );
   }
 }
 
-/// 首页 AI 综合判断卡：近期到期 + 体重体型 + 近 14 天事件 → 意见建议。
+/// 首页 AI 综合判断卡：白瓷片 + 小强调图标 + Markdown 正文。
 class _InsightCard extends ConsumerStatefulWidget {
   const _InsightCard({required this.pet, required this.records});
 
@@ -877,20 +952,14 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
     final aiReady = ref.watch(aiConfigProvider).isReady;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            cs.primary.withValues(alpha: 0.07),
-            cs.surface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: Column(
@@ -898,21 +967,13 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
         children: [
           Row(
             children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: AppTheme.primaryGradient),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: Colors.white),
-              ),
-              const SizedBox(width: 10),
+              Icon(Icons.auto_awesome_outlined,
+                  size: 16, color: dark ? Colors.white60 : AppTheme.inkSecondary),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('AI 近期综合判断',
-                    style: AppTheme.cardTitle(cs.onSurface)),
+                child: Text('近期综合判断',
+                    style: AppTheme.cardTitle(
+                        dark ? Colors.white : AppTheme.ink)),
               ),
               if (_at != null && !_loading)
                 Text(
@@ -920,7 +981,7 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
                           _at!.day == DateTime.now().day
                       ? '今天更新'
                       : '${_at!.month}/${_at!.day} 更新',
-                  style: AppTheme.captionSm(cs.onSurfaceVariant),
+                  style: AppTheme.captionSm(inkSec),
                 ),
               const SizedBox(width: 6),
               _loading
@@ -929,27 +990,33 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        _text == null
-                            ? Icons.play_arrow_rounded
-                            : Icons.refresh_rounded,
-                        size: 20,
-                        color: cs.primary,
+                  : GestureDetector(
+                      onTap: aiReady ? _generate : null,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: AppTheme.green.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _text == null
+                              ? Icons.play_arrow_rounded
+                              : Icons.refresh_rounded,
+                          size: 16,
+                          color: AppTheme.green,
+                        ),
                       ),
-                      tooltip: _text == null ? '生成' : '刷新',
-                      onPressed: aiReady ? _generate : null,
                     ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           if (!aiReady)
             Row(
               children: [
                 Expanded(
                   child: Text('配置 AI 后，会根据近期到期、体重与症状给出综合建议',
-                      style: AppTheme.subhead(cs.onSurfaceVariant)),
+                      style: AppTheme.subhead(inkSec)),
                 ),
                 TextButton(
                   onPressed: () => context.push('/settings/ai'),
@@ -965,8 +1032,7 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2)),
                 const SizedBox(width: 10),
-                Text('AI 正在分析近期情况…',
-                    style: AppTheme.subhead(cs.onSurfaceVariant)),
+                Text('AI 正在分析近期情况…', style: AppTheme.subhead(inkSec)),
               ],
             )
           else if (_error != null && _text == null)
@@ -985,7 +1051,7 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
             )
           else
             Text('点击右侧按钮，让 AI 结合近期情况给出判断与建议',
-                style: AppTheme.subhead(cs.onSurfaceVariant)),
+                style: AppTheme.subhead(inkSec)),
           if (_error != null && _text != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),

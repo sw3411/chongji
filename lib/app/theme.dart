@@ -1,75 +1,91 @@
 import 'package:flutter/material.dart';
 
-/// 主题：暖萌宠物风（2026-08 视觉重构）。
+/// 主题：纸感画布 + 白瓷片（2026-08 v5 全局统一）。
 ///
-/// 设计语言：奶油米底 + 蜜桃橙主色 + 糖果点缀（薄荷/奶油黄/樱花粉），
-/// 超大圆角、软投影、胶囊按钮——参考主流宠物 App 的温馨可爱气质。
-/// 字体层级沿用 Apple 规格（大小 × 粗细严格区分），骨架不变、气质换血。
+/// 设计语言：整页是一张连续的暖纸画布（canvas），内容放在白瓷"片"
+/// （sheet）上——无描边、无投影、统一 20 圆角，靠底色差而非边框分层。
+/// 色彩收敛：墨色文字 + 单一陶土强调色；彩色只保留给状态语义（到期/
+/// 涨跌）与图表分类，且分类色统一为同明度的低饱和家族，杜绝彩虹感。
+/// 页面主视觉（首页/健康页数据大卡）用整张渐变"场景卡"承载大数字。
 ///
 /// 注意：为兼容存量页面，主色常量仍沿用旧命名（green* 等），
-/// 值已全部映射为暖萌色板，语义以注释为准。
+/// 语义以注释为准。
 class AppTheme {
   AppTheme._();
 
-  // ---------- 暖萌色板 ----------
+  // ---------- v5 色板 ----------
 
-  /// 主色：陶土橙（低饱和，安静的高级感）。
-  static const Color green = Color(0xFFC97B5A);
+  /// 主色：陶土（唯一强调色，克制使用）。
+  static const Color green = Color(0xFFC0765A);
 
-  static const Color greenLight = Color(0xFFD99C7E);
+  static const Color greenLight = Color(0xFFD09A80);
 
-  static const Color greenDark = Color(0xFFCB8060);
+  /// 深色模式下的强调色（略提亮保证对比）。
+  static const Color greenDark = Color(0xFFC9856A);
 
   static const Color greenBubble = Color(0xFF5E4536);
 
   static const Color bubbleOut = Color(0xFFF3E9E1);
 
-  /// 点缀（降饱和）：灰薄荷 / 亚麻金 / 灰玫瑰。
-  static const Color mint = Color(0xFF6E9E85);
-  static const Color honey = Color(0xFFC7A268);
-  static const Color sakura = Color(0xFFC795A1);
+  /// 低饱和分类色板（图表/徽标共用，同一明度家族，避免彩虹感）。
+  static const Color sage = Color(0xFF93A88C);
+  static const Color ochre = Color(0xFFC4A265);
+  static const Color mauve = Color(0xFFA78FAD);
+  static const Color steel = Color(0xFF7FA0B5);
+  static const Color rose = Color(0xFFC79191);
+  static const Color olive = Color(0xFF9BA182);
+  static const Color taupe = Color(0xFFB3A48F);
 
-  /// 主色渐变（中央钮 / 品牌元素）。
-  static const List<Color> primaryGradient = [Color(0xFFCC7D5E), Color(0xFFC0665D)];
+  // 兼容旧命名。
+  static const Color mint = sage;
+  static const Color honey = ochre;
+  static const Color sakura = rose;
 
-  /// 首页头部渐变（极淡暖白过渡，近不可见）。
-  static const List<Color> headerGradientLight = [Color(0xFFF4EFEA), Color(0xFFFAF8F5)];
-  static const List<Color> headerGradientDark = [Color(0xFF241F1A), Color(0xFF171412)];
+  /// 中央钮 / 品牌元素渐变。
+  static const List<Color> primaryGradient = [Color(0xFFC98061), Color(0xFFB4644C)];
+
+  /// 场景卡渐变（首页/健康页数据大卡）。
+  static const List<Color> sceneGradientLight = [Color(0xFFE2A57D), Color(0xFFBB6852)];
+  static const List<Color> sceneGradientDark = [Color(0xFF4A3828), Color(0xFF2B2118)];
+
+  /// 页面顶部环境光渐变（极淡，过渡进画布）。
+  static const List<Color> headerGradientLight = [Color(0xFFF1EAE1), Color(0xFFF3F0EA)];
+  static const List<Color> headerGradientDark = [Color(0xFF201C17), Color(0xFF131110)];
 
   /// 毛玻璃表面（悬浮底导用）。
   static Color glassSurface(bool dark) =>
-      dark ? const Color(0xCC211E1A) : const Color(0xCCFFFFFF);
+      dark ? const Color(0xCC1D1A17) : const Color(0xCCFFFFFF);
   static Color glassBorder(bool dark) =>
       dark ? const Color(0x1FFFFFFF) : const Color(0x14000000);
 
-  /// 文字：软黑 / 暖灰 / 浅灰（降饱和）。
-  static const Color ink = Color(0xFF2A2521);
-  static const Color inkSecondary = Color(0xFFA39A92);
-  static const Color inkTertiary = Color(0xFFC2BAB2);
+  /// 文字：墨色三级（暖灰调）。
+  static const Color ink = Color(0xFF292420);
+  static const Color inkSecondary = Color(0xFF9C948B);
+  static const Color inkTertiary = Color(0xFFC2BAB1);
 
-  /// 浅色：暖白纸底、纯白卡、细分割线。
-  static const Color lightBg = Color(0xFFFAF8F5);
+  /// 浅色：暖纸画布 + 白瓷片 + 片内发丝线。
+  static const Color lightBg = Color(0xFFF3F0EA);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightDivider = Color(0xFFF0EDE8);
+  static const Color lightDivider = Color(0xFFECE8E1);
 
-  /// 深色：近黑暖夜。
-  static const Color darkBg = Color(0xFF171412);
-  static const Color darkSurface = Color(0xFF211E1A);
-  static const Color darkSurfaceAlt = Color(0xFF2C2823);
-  static const Color darkDivider = Color(0xFF35312B);
+  /// 深色：暖夜画布 + 微亮瓷片。
+  static const Color darkBg = Color(0xFF131110);
+  static const Color darkSurface = Color(0xFF1D1A17);
+  static const Color darkSurfaceAlt = Color(0xFF262219);
+  static const Color darkDivider = Color(0xFF2B2721);
 
-  /// 状态色（保持高饱和，微暖化）。
-  static const Color warnRed = Color(0xFFF0544F);
-  static const Color warnAmber = Color(0xFFF5A83C);
-  static const Color okGreen = Color(0xFF3BB273);
-  static const Color infoBlue = Color(0xFF5B9BD5);
+  /// 状态色（仅用于语义：到期/涨跌/成功）。
+  static const Color warnRed = Color(0xFFE25B55);
+  static const Color warnAmber = Color(0xFFDE9A3A);
+  static const Color okGreen = Color(0xFF4CA477);
+  static const Color infoBlue = Color(0xFF7FA0B5);
 
-  /// 卡片圆角：潮汐式安静圆角。
-  static const double cardRadius = 18;
+  /// 卡片圆角：全局唯一圆角体系（场景卡 24，其余 20）。
+  static const double cardRadius = 20;
 
-  /// 软投影：更轻（避免多卡堆叠的漂浮感），仅核心卡使用。
-  static List<BoxShadow> softShadow([Color base = const Color(0x083D2E26)]) => [
-        BoxShadow(color: base, blurRadius: 10, offset: const Offset(0, 3)),
+  /// 极轻投影：仅悬浮元素（FAB/底导）使用，卡片一律不用。
+  static List<BoxShadow> softShadow([Color base = const Color(0x0A3D2E26)]) => [
+        BoxShadow(color: base, blurRadius: 16, offset: const Offset(0, 4)),
       ];
 
   static ThemeData light() {
@@ -79,7 +95,7 @@ class AppTheme {
       onPrimary: Colors.white,
       secondary: greenLight,
       onSecondary: Colors.white,
-      tertiary: mint,
+      tertiary: sage,
       brightness: Brightness.light,
       surface: lightSurface,
       onSurface: ink,
@@ -102,12 +118,12 @@ class AppTheme {
       onPrimary: Colors.white,
       secondary: greenLight,
       onSecondary: Colors.white,
-      tertiary: mint,
+      tertiary: sage,
       brightness: Brightness.dark,
       surface: darkSurface,
-      onSurface: const Color(0xFFF3E9E1),
+      onSurface: const Color(0xFFF0EAE3),
       surfaceContainerHighest: darkSurfaceAlt,
-      onSurfaceVariant: const Color(0xFFBCA99B),
+      onSurfaceVariant: const Color(0xFFB5ACA2),
       outlineVariant: darkDivider,
     );
     return _common(ThemeData(
@@ -128,16 +144,17 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
           fontSize: 17,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
           color: cs.onSurface,
         ),
+        iconTheme: IconThemeData(color: cs.onSurfaceVariant, size: 22),
       ),
       cardTheme: CardThemeData(
         color: cs.surface,
-        // 精致质感：极轻投影。
-        elevation: 0.5,
-        shadowColor: const Color(0x0A3D2E26),
+        // 白瓷片：零投影零描边，靠画布底色差分层。
+        elevation: 0,
+        shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
@@ -149,51 +166,50 @@ class AppTheme {
           backgroundColor: cs.primary,
           foregroundColor: cs.onPrimary,
           shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-          minimumSize: const Size(40, 38),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          minimumSize: const Size(40, 40),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: cs.primary,
-          side: BorderSide(color: cs.primary.withValues(alpha: 0.5), width: 1),
+          foregroundColor: cs.onSurface,
+          side: BorderSide(color: cs.outlineVariant, width: 1),
           shape: const StadiumBorder(),
-          minimumSize: const Size(40, 38),
-          textStyle:
-              const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          minimumSize: const Size(40, 40),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: cs.primary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: green,
         foregroundColor: Colors.white,
-        elevation: 3,
+        elevation: 2,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(22)),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: base.brightness == Brightness.light
-            ? const Color(0xFFFFFCF7)
+            ? const Color(0xFFF5F2EC)
             : darkSurfaceAlt,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: cs.primary, width: 1.8),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.primary, width: 1.4),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
@@ -242,28 +258,28 @@ class AppTheme {
 
   // ---------- 字号阶梯（页面直接引用，规格不变） ----------
 
-  /// 大标题：24/w800，页面主视觉与汇总大数字（字阶压缩版）。
+  /// 大标题：页面主视觉与汇总大数字。
   static TextStyle largeTitle(Color color, {double size = 20}) => TextStyle(
         fontSize: size,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.5,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.4,
         height: 1.12,
         color: color,
       );
 
-  /// 区块大标题：16.5/w800。
+  /// 区块大标题：16/w700。
   static TextStyle title(Color color) => TextStyle(
-        fontSize: 16.5,
-        fontWeight: FontWeight.w800,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
         height: 1.2,
         color: color,
       );
 
-  /// 卡片/列表主标题：14/w700。
+  /// 卡片/列表主标题：14/w600。
   static TextStyle cardTitle(Color color) => TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         letterSpacing: -0.1,
         height: 1.3,
         color: color,
@@ -309,20 +325,20 @@ class AppTheme {
         color: color,
       );
 
-  /// 大数字：等宽数字 + 加粗（体重、金额、倒计时）。
+  /// 大数字：等宽 + w600（避免"w800 粗黑"的老气，轻盈才高级）。
   static TextStyle bigNumber(Color color, {double size = 18}) => TextStyle(
         fontSize: size,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.6,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
         height: 1.1,
         color: color,
         fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  /// 区块小标题：11.5/w700 +0.6 字距。
+  /// 区块小标题：10.5/w600 +0.6 字距。
   static TextStyle label(Color color) => TextStyle(
         fontSize: 10.5,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         letterSpacing: 0.6,
         color: color,
       );

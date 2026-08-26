@@ -269,18 +269,13 @@ class _WellnessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // 渐变底：浅色陶土暖渐变，深色暖夜渐变。
-    final gradient = dark
-        ? const LinearGradient(
-            colors: [Color(0xFF463527), Color(0xFF2A2018)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-        : const LinearGradient(
-            colors: [Color(0xFFDE9B74), Color(0xFFC0665D)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          );
+    // 场景卡渐变（与首页同语言）。
+    final gradient = LinearGradient(
+      colors:
+          dark ? AppTheme.sceneGradientDark : AppTheme.sceneGradientLight,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
     final onCard = Colors.white.withValues(alpha: 0.95);
     final onCardFaint = Colors.white.withValues(alpha: 0.55);
 
@@ -296,14 +291,11 @@ class _WellnessCard extends StatelessWidget {
             // 背景折线纹理：隐约的体重走势，不与前景争抢。
             if (weights.length >= 2)
               Positioned.fill(
-                child: Opacity(
-                  opacity: 0.14,
-                  child: _Sparkline(spots: [
-                    for (final r in weights)
-                      FlSpot(
-                          r.date.millisecondsSinceEpoch.toDouble(), r.value!),
-                  ]),
-                ),
+                child: SparklineBg(spots: [
+                  for (final r in weights)
+                    FlSpot(
+                        r.date.millisecondsSinceEpoch.toDouble(), r.value!),
+                ]),
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
@@ -482,62 +474,6 @@ class _WellnessCard extends StatelessWidget {
   }
 }
 
-/// 背景装饰折线：无轴无网格无交互，Apple Health 式 sparkline。
-class _Sparkline extends StatelessWidget {
-  const _Sparkline({required this.spots});
-
-  final List<FlSpot> spots;
-
-  @override
-  Widget build(BuildContext context) {
-    if (spots.length < 2) return const SizedBox.shrink();
-    final minX = spots.first.x;
-    var maxX = spots.last.x;
-    if (maxX <= minX) maxX = minX + 1; // 同日两条记录时避免零宽。
-    final minY = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
-    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-    final pad = (maxY - minY).clamp(0.1, 10.0) * 0.35;
-    return LineChart(
-      LineChartData(
-        minX: minX,
-        maxX: maxX,
-        minY: minY - pad,
-        maxY: maxY + pad,
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(
-          topTitles: AxisTitles(),
-          rightTitles: AxisTitles(),
-          bottomTitles: AxisTitles(),
-          leftTitles: AxisTitles(),
-        ),
-        borderData: FlBorderData(show: false),
-        lineTouchData: const LineTouchData(enabled: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            preventCurveOverShooting: true,
-            color: Colors.white,
-            barWidth: 1.5,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.35),
-                  Colors.white.withValues(alpha: 0.0),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ============================================================
 // 趋势图：体重实线（渐变面积）× BCS 虚线，两端趋势外推
 // ============================================================
@@ -554,7 +490,7 @@ class _TrendChart extends StatelessWidget {
     final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
     final surface = dark ? AppTheme.darkSurface : Colors.white;
     final weightColor = AppTheme.green;
-    final bcsColor = AppTheme.warnAmber;
+    final bcsColor = AppTheme.honey;
 
     final DateTime first;
     final DateTime lastDate;
@@ -1308,7 +1244,7 @@ class _DeltaText extends StatelessWidget {
   }
 }
 
-/// 类型筛选 chip：细线描边小胶囊，选中淡染。
+/// 类型筛选 chip：未选中白瓷片，选中淡染（无描边）。
 class _TypeChip extends StatelessWidget {
   const _TypeChip(
     this.label, {
@@ -1334,22 +1270,21 @@ class _TypeChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: selected ? base.withValues(alpha: 0.10) : Colors.transparent,
+            color: selected
+                ? base.withValues(alpha: 0.11)
+                : (dark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: selected
-                  ? base.withValues(alpha: 0.30)
-                  : dark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : AppTheme.lightDivider,
-            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? base : (dark ? Colors.white38 : AppTheme.inkTertiary),
+              color: selected
+                  ? base
+                  : (dark ? Colors.white38 : AppTheme.inkTertiary),
             ),
           ),
         ),
@@ -1382,7 +1317,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-/// 安静的卡：浅色白底发丝描边无投影；深色微亮底。
+/// 安静的卡：白瓷片（画布底色差分层，无描边无投影）；深色微亮底。
 class _QuietCard extends StatelessWidget {
   const _QuietCard({required this.child});
 
@@ -1393,11 +1328,8 @@ class _QuietCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: 0.035) : Colors.white,
+        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: dark
-            ? Border.all(color: Colors.white.withValues(alpha: 0.05))
-            : Border.all(color: const Color(0x083D2E26)),
       ),
       child: child,
     );

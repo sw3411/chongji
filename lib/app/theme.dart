@@ -36,6 +36,10 @@ class AppTheme {
   /// 主色渐变（中央钮 / 品牌元素）。
   static const List<Color> primaryGradient = [Color(0xFFFF8A4C), Color(0xFFFF7E79)];
 
+  /// 首页头部渐变（浅奶油橙 → 页面底色）。
+  static const List<Color> headerGradientLight = [Color(0xFFFFEEDC), Color(0xFFFFF7EF)];
+  static const List<Color> headerGradientDark = [Color(0xFF3A2B1F), Color(0xFF211A15)];
+
   /// 文字：暖棕黑 / 暖灰棕 / 更浅。
   static const Color ink = Color(0xFF3D2E26);
   static const Color inkSecondary = Color(0xFF9A8578);
@@ -58,8 +62,8 @@ class AppTheme {
   static const Color okGreen = Color(0xFF3BB273);
   static const Color infoBlue = Color(0xFF5B9BD5);
 
-  /// 卡片圆角：暖萌风加大。
-  static const double cardRadius = 22;
+  /// 卡片圆角：出行卡风格超大圆角。
+  static const double cardRadius = 24;
 
   /// 软投影（暖色调、低透明度、大扩散）。
   static List<BoxShadow> softShadow([Color base = const Color(0x143D2E26)]) => [
@@ -244,9 +248,9 @@ class AppTheme {
         color: color,
       );
 
-  /// 区块大标题：22/w700。
+  /// 区块大标题：23/w800。
   static TextStyle title(Color color) => TextStyle(
-        fontSize: 22,
+        fontSize: 23,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.3,
         height: 1.2,

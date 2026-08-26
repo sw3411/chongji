@@ -9,42 +9,69 @@ import '../../app/image_store.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/ai/ai_client.dart';
-import '../../domain/models/enums.dart';
 import '../../domain/models/health_record.dart';
+import '../../domain/models/moment.dart';
 import '../../domain/models/pet.dart';
 import '../../domain/services/health_calculator.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/sync_button.dart';
 
-/// 首页：宠物大图横幅（下拉切换）+ 今日概览 + 到期倒计时 + 最近时刻。
+/// 首页（出行卡风格）：渐变头部 + 宠物胶囊切换 + 数据大卡 + 金刚位 +
+/// AI 洞察 + 到期提醒 + 横向时刻流。
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pets = ref.watch(petsProvider).valueOrNull ?? const <Pet>[];
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     if (pets.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('宠迹')),
-        body: EmptyView(
-          icon: Icons.pets,
-          title: '还没有宠物档案',
-          subtitle: '添加第一只宠物，开始记录它的健康与日常',
-          action: FilledButton(
-            onPressed: () => context.push('/pet/new'),
-            child: const Text('添加宠物'),
+        body: _HeaderGradient(
+          child: Column(
+            children: [
+              SizedBox(height: MediaQuery.paddingOf(context).top + 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: const [SyncButton()],
+              ),
+              Expanded(
+                child: EmptyView(
+                  icon: Icons.pets,
+                  title: '欢迎来到宠迹',
+                  subtitle: '添加第一只宠物，开始记录它的健康与日常',
+                  action: FilledButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.add),
+                    label: const Text('添加宠物'),
+                  ),
+                ),
+              ),
+            ],
           ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push('/pet/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('添加宠物'),
         ),
       );
     }
 
     final pet = ref.watch(currentPetProvider) ?? pets.first;
     final records = ref.watch(currentPetRecordsProvider);
-    final moments = ref.watch(allMomentsProvider).valueOrNull ?? const [];
+    final moments =
+        ref.watch(allMomentsProvider).valueOrNull ?? const <Moment>[];
     final petMoments = moments.where((m) => m.petId == pet.id).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
     final dues = buildDueItems(pet, records);
+    final weight = HealthCalculator.latestWeight(records);
+    final bcs = HealthCalculator.latestBcs(records);
+    final weightChange = HealthCalculator.weightChange(records, 30);
+    final nextDue = dues.isEmpty
+        ? null
+        : dues.reduce((a, b) => a.daysLeft <= b.daysLeft ? a : b);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -53,353 +80,662 @@ class HomePage extends ConsumerWidget {
         label: const Text('AI 助手'),
         tooltip: 'AI 助手',
       ),
-      body: CustomScrollView(
-        slivers: [
-          _PetBanner(pet: pet, pets: pets),
-          SliverPadding(
-            padding: const EdgeInsets.only(top: 14, bottom: 24),
-            sliver: SliverList.list(
-              children: [
-                // 到期提醒。
-                SectionTitle(
-                  '到期提醒',
-                  trailing: dues.isEmpty
-                      ? null
-                      : TextButton(
-                          onPressed: () => context.push('/health'),
-                          child: const Text('健康页'),
-                        ),
-                ),
-                if (dues.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.verified_outlined,
-                                color: AppTheme.okGreen, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text('近期没有疫苗 / 驱虫 / 生日到期，一切都在计划中',
-                                  style: AppTheme.subhead(
-                                      Theme.of(context).colorScheme.onSurface)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...dues.take(3).map((due) => _DueCard(due: due)),
-                // AI 综合判断。
-                SectionTitle('AI 洞察'),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _InsightCard(pet: pet, records: records),
-                ),
-                // 最近时刻。
-                SectionTitle(
-                  '最近时刻',
-                  trailing: TextButton(
-                    onPressed: () => context.go('/timeline'),
-                    child: const Text('时间线'),
-                  ),
-                ),
-                if (petMoments.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('记录游玩、美容、生日这些值得纪念的日子',
-                            style: AppTheme.subhead(
-                                Theme.of(context).colorScheme.onSurfaceVariant)),
-                      ),
-                    ),
-                  )
-                else
-                  ...petMoments.take(3).map((m) => Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
-                        child: Card(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            onTap: () => context.go('/timeline'),
-                            leading: m.imagePaths.isEmpty
-                                ? Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      color: momentTypeColor(m.type)
-                                          .withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(Icons.photo_outlined,
-                                        color: momentTypeColor(m.type)),
-                                  )
-                                : LocalImage(
-                                    m.imagePaths.first,
-                                    size: 52,
-                                    borderRadius: 10,
-                                  ),
-                            title: Text(m.title,
-                                style: AppTheme.cardTitle(
-                                    Theme.of(context).colorScheme.onSurface)),
-                            subtitle: Text(
-                              '${m.type.label} · ${m.date.month}/${m.date.day}',
-                              style: AppTheme.footnote(
-                                  Theme.of(context).colorScheme.onSurfaceVariant),
-                            ),
-                          ),
-                        ),
-                      )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 顶部宠物横幅：大图铺满 + 渐变 + 宠物名/信息 + 下拉切换。
-class _PetBanner extends StatelessWidget {
-  const _PetBanner({required this.pet, required this.pets});
-
-  final Pet pet;
-  final List<Pet> pets;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasPhoto = ImageStore.exists(pet.avatarPath);
-    final cs = Theme.of(context).colorScheme;
-
-    return SliverAppBar(
-      expandedHeight: 210,
-      pinned: false,
-      stretch: true,
-      automaticallyImplyLeading: false,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      actions: [
-        // 同步 / 设置 收进横幅右上角；AI 助手在右下角悬浮球。
-        const SyncButtonLight(),
-        IconButton(
-          icon: Icon(Icons.settings_outlined,
-              color: hasPhoto ? Colors.white : cs.onSurfaceVariant,
-              shadows: hasPhoto ? _shadow : null),
-          tooltip: '设置',
-          onPressed: () => context.push('/settings'),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: GestureDetector(
-          onTap: () => context.push('/pet/${pet.id}'),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 大图（无图时用主题色占位）。
-              if (hasPhoto)
-                Image.file(
-                  File(pet.avatarPath!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(cs),
-                )
-              else
-                _placeholder(cs),
-              // 底部渐变保证文字可读。
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.05),
-                        Colors.black.withValues(alpha: 0.62),
-                      ],
-                      stops: const [0.45, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              // 宠物名 + 信息 + 下拉切换。
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 14,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            pet.name,
-                            style: const TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                              shadows: _shadow,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${pet.species.label} · ${pet.breedLabel} · ${HealthCalculator.ageText(pet.birthday)}'
-                            '${pet.gender == PetGender.unknown ? "" : " · ${pet.gender.label}"}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.92),
-                              shadows: _shadow,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _PetDropdown(pet: pet, pets: pets),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static const _shadow = <Shadow>[
-    Shadow(blurRadius: 6, color: Colors.black54),
-  ];
-
-  Widget _placeholder(ColorScheme cs) => Container(
-        color: cs.primary.withValues(alpha: 0.9),
-        child: const Icon(Icons.pets, color: Colors.white24, size: 96),
-      );
-}
-
-/// 宠物下拉切换（PopupMenu，半透明深色底白字）。
-class _PetDropdown extends StatelessWidget {
-  const _PetDropdown({required this.pet, required this.pets});
-
-  final Pet pet;
-  final List<Pet> pets;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: PopupMenuButton<String>(
-        tooltip: '切换宠物',
-        color: const Color(0xF5202C33),
-        position: PopupMenuPosition.under,
-        offset: const Offset(0, 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        onSelected: (id) {
-          if (id == '__add__') {
-            context.push('/pet/new');
-          } else {
-            ProviderScope.containerOf(context)
-                .read(currentPetIdProvider.notifier)
-                .select(id);
-          }
-        },
-        itemBuilder: (context) => [
-          for (final p in pets)
-            PopupMenuItem(
-              value: p.id,
+      body: _HeaderGradient(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            SizedBox(height: MediaQuery.paddingOf(context).top + 10),
+            // 顶栏：宠物胶囊 + 同步/设置。
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  PetAvatar(
-                    path: p.avatarPath,
-                    speciesIcon:
-                        p.species == PetSpecies.cat ? Icons.pets : Icons.pets,
-                    size: 30,
+                  Expanded(child: _PetCapsule(pet: pet, pets: pets)),
+                  const SyncButton(),
+                  IconButton(
+                    icon: Icon(Icons.settings_outlined,
+                        color: dark ? Colors.white : AppTheme.ink),
+                    tooltip: '设置',
+                    onPressed: () => context.push('/settings'),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    p.name,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: p.id == pet.id ? FontWeight.w700 : FontWeight.w400,
-                      color: p.id == pet.id
-                          ? AppTheme.greenLight
-                          : Colors.white,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (p.id == pet.id)
-                    const Icon(Icons.check_rounded,
-                        color: Color(0xFF25D366), size: 18),
                 ],
               ),
             ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: '__add__',
-            child: Row(
-              children: [
-                Icon(Icons.add, color: Color(0xFF25D366), size: 20),
-                SizedBox(width: 10),
-                Text('添加宠物',
-                    style: TextStyle(color: Colors.white, fontSize: 15)),
-              ],
+            // 问候语。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+              child: _Greeting(pet: pet),
             ),
-          ),
-        ],
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PetAvatar(
-                path: pet.avatarPath,
-                speciesIcon:
-                    pet.species == PetSpecies.cat ? Icons.pets : Icons.pets,
-                size: 22,
+            const SizedBox(height: 10),
+            // 数据大卡。
+            _HeroCard(
+              pet: pet,
+              weight: weight?.value,
+              weightDelta: weightChange?.$1,
+              bcs: bcs?.value?.toInt(),
+              nextDue: nextDue,
+            ),
+            const SizedBox(height: 18),
+            // 金刚位。
+            const _QuickActions(),
+            const SizedBox(height: 8),
+            // AI 洞察。
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _InsightCard(pet: pet, records: records),
+            ),
+            // 到期提醒。
+            _HomeSection(
+              title: '到期提醒',
+              trailing: dues.isEmpty
+                  ? null
+                  : TextButton(
+                      onPressed: () => context.go('/health'),
+                      child: const Text('全部'),
+                    ),
+              child: dues.isEmpty
+                  ? const _MiniCard(
+                      icon: Icons.verified_rounded,
+                      color: AppTheme.okGreen,
+                      text: '近期没有疫苗 / 驱虫 / 生日到期，一切都在计划中 👌',
+                    )
+                  : Column(
+                      children: [
+                        for (final due in dues.take(3)) _DueCard(due: due),
+                      ],
+                    ),
+            ),
+            // 最近时刻。
+            if (petMoments.isNotEmpty)
+              _HomeSection(
+                title: '最近时刻',
+                trailing: TextButton(
+                  onPressed: () => context.go('/timeline'),
+                  child: const Text('全部'),
+                ),
+                child: SizedBox(
+                  height: 168,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: petMoments.take(10).length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) =>
+                        _MomentCard(moment: petMoments[index]),
+                  ),
+                ),
               ),
-              const SizedBox(width: 6),
-              Text('切换',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.95),
-                      fontWeight: FontWeight.w600)),
-              const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Colors.white70, size: 18),
-            ],
-          ),
+            const SizedBox(height: 96),
+          ],
         ),
       ),
     );
   }
 }
 
-/// 到期提醒卡：按类型配色（生日/纪念日喜庆，疫苗/驱虫重要）+ 紧急度徽章。
+/// 头部渐变容器：奶油橙渐变过渡到页面底色。
+class _HeaderGradient extends StatelessWidget {
+  const _HeaderGradient({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: dark
+              ? AppTheme.headerGradientDark
+              : AppTheme.headerGradientLight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.32],
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// 宠物身份胶囊：头像 + 名字 + 下拉切换（参考滴滴宠物头部）。
+class _PetCapsule extends StatelessWidget {
+  const _PetCapsule({required this.pet, required this.pets});
+
+  final Pet pet;
+  final List<Pet> pets;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () => _showPicker(context),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: AppTheme.softShadow(),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PetAvatar(
+              path: pet.avatarPath,
+              speciesIcon: Icons.pets,
+              size: 34,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                '${pet.name} · ${pet.speciesLabel}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    AppTheme.cardTitle(cs.onSurface).copyWith(fontSize: 15.5),
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                color: cs.onSurfaceVariant, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Consumer(
+          builder: (context, ref, _) {
+            final cs = Theme.of(context).colorScheme;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, bottom: 4),
+                  child: Text('切换宠物',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ),
+                for (final p in pets)
+                  ListTile(
+                    leading: PetAvatar(path: p.avatarPath, size: 40),
+                    title:
+                        Text(p.name, style: AppTheme.cardTitle(cs.onSurface)),
+                    subtitle: Text('${p.speciesLabel} · ${p.breedLabel}',
+                        style: AppTheme.caption(cs.onSurfaceVariant)),
+                    trailing: p.id == pet.id
+                        ? Icon(Icons.check_rounded,
+                            color: cs.primary, size: 22)
+                        : null,
+                    onTap: () {
+                      ref.read(currentPetIdProvider.notifier).select(p.id);
+                      Navigator.pop(context);
+                    },
+                  ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add, color: cs.primary),
+                  ),
+                  title:
+                      Text('添加宠物', style: AppTheme.cardTitle(cs.primary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/pet/new');
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// 问候语：时段问候 + 宠物名。
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.pet});
+
+  final Pet pet;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hour = DateTime.now().hour;
+    final hello = hour < 6
+        ? '夜深了'
+        : hour < 11
+            ? '早上好'
+            : hour < 14
+                ? '中午好'
+                : hour < 18
+                    ? '下午好'
+                    : '晚上好';
+    final now = DateTime.now();
+    const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$hello，${pet.name} 🐾',
+          style: AppTheme.largeTitle(cs.onSurface, size: 28),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${now.month}月${now.day}日 周${weekdays[now.weekday - 1]} · '
+          '${HealthCalculator.ageText(pet.birthday)}的${pet.speciesLabel}',
+          style: AppTheme.subhead(cs.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+}
+
+/// 数据大卡：体重 / 体型 / 下次到期 三栏 + 底部快捷记录按钮。
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.pet,
+    this.weight,
+    this.weightDelta,
+    this.bcs,
+    this.nextDue,
+  });
+
+  final Pet pet;
+  final double? weight;
+  final double? weightDelta;
+  final int? bcs;
+  final DueItem? nextDue;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget stat(String label, String value, String? unit, String? sub,
+        Color? subColor, Color numberColor, VoidCallback onTap) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            children: [
+              Text(label, style: AppTheme.label(cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(value,
+                        style: AppTheme.bigNumber(numberColor, size: 28)),
+                    if (unit != null) ...[
+                      const SizedBox(width: 2),
+                      Text(unit, style: AppTheme.caption(cs.onSurfaceVariant)),
+                    ],
+                  ],
+                ),
+              ),
+              if (sub != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.captionSm(subColor ?? cs.onSurfaceVariant)
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          boxShadow: AppTheme.softShadow(),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                stat(
+                  '当前体重',
+                  weight == null ? '—' : weight!.toStringAsFixed(1),
+                  weight == null ? null : 'kg',
+                  weightDelta == null
+                      ? (weight == null ? '去记录' : null)
+                      : '30天 ${weightDelta! >= 0 ? "+" : ""}${weightDelta!.toStringAsFixed(2)}',
+                  weightDelta == null || weightDelta == 0
+                      ? null
+                      : weightDelta! > 0
+                          ? AppTheme.warnRed
+                          : AppTheme.okGreen,
+                  weight == null ? cs.onSurface : cs.primary,
+                  () => context.push('/health/record/new', extra: 'weight'),
+                ),
+                _statDivider(cs),
+                stat(
+                  '体型评分',
+                  bcs == null ? '—' : '$bcs',
+                  bcs == null ? null : '/9',
+                  bcs == null ? '未评估' : null,
+                  null,
+                  bcs == null ? cs.onSurface : AppTheme.mint,
+                  () => context.push('/health/record/new', extra: 'bcs'),
+                ),
+                _statDivider(cs),
+                stat(
+                  '下次到期',
+                  nextDue == null
+                      ? '—'
+                      : '${nextDue!.daysLeft < 0 ? 0 : nextDue!.daysLeft}',
+                  nextDue == null ? null : '天',
+                  nextDue?.title,
+                  nextDue == null
+                      ? null
+                      : nextDue!.daysLeft <= 0
+                          ? AppTheme.warnRed
+                          : nextDue!.daysLeft <= 7
+                              ? AppTheme.warnAmber
+                              : AppTheme.okGreen,
+                  nextDue == null
+                      ? cs.onSurface
+                      : nextDue!.daysLeft <= 0
+                          ? AppTheme.warnRed
+                          : AppTheme.honey,
+                  () => context.go('/health'),
+                ),
+              ],
+            ),
+            Divider(
+                color: cs.outlineVariant.withValues(alpha: 0.6), height: 22),
+            Row(
+              children: [
+                _quickChip(
+                    context, Icons.scale_rounded, '记体重', 'weight'),
+                const SizedBox(width: 8),
+                _quickChip(
+                    context, Icons.vaccines_rounded, '疫苗/驱虫', 'vaccine'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    onPressed: () => context.push('/moment/new'),
+                    icon: const Icon(Icons.photo_camera_rounded, size: 17),
+                    label: const Text('记时刻'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statDivider(ColorScheme cs) => Container(
+        width: 1,
+        height: 40,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        color: cs.outlineVariant.withValues(alpha: 0.6),
+      );
+
+  Widget _quickChip(BuildContext context, IconData icon, String label,
+      String type) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          side: BorderSide(color: cs.outlineVariant),
+          foregroundColor: cs.onSurface,
+        ),
+        onPressed: () => context.push('/health/record/new', extra: type),
+        icon: Icon(icon, size: 17, color: cs.primary),
+        label: Text(label, style: const TextStyle(fontSize: 13.5)),
+      ),
+    );
+  }
+}
+
+/// 金刚位：渐变圆角方块 + 小字。
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget action(IconData icon, String label, List<Color> colors,
+        VoidCallback onTap) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: colors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                        color: colors[1].withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5)),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 25),
+              ),
+              const SizedBox(height: 7),
+              Text(label,
+                  style: AppTheme.footnote(cs.onSurface)
+                      .copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          action(Icons.restaurant_rounded, 'AI 饮食',
+              [AppTheme.green, const Color(0xFFFF7E79)],
+              () => context.go('/diet')),
+          action(Icons.event_rounded, '日历',
+              [AppTheme.mint, const Color(0xFF2E9E6B)],
+              () => context.push('/calendar')),
+          action(Icons.savings_rounded, '账本',
+              [AppTheme.honey, const Color(0xFFF5A83C)],
+              () => context.push('/expenses')),
+          action(Icons.auto_awesome_rounded, '周报',
+              [AppTheme.sakura, const Color(0xFFF27D9C)],
+              () => context.push('/ai/weekly')),
+        ],
+      ),
+    );
+  }
+}
+
+/// 首页分区：标题 + 内容。
+class _HomeSection extends StatelessWidget {
+  const _HomeSection({required this.title, this.trailing, required this.child});
+
+  final String title;
+  final Widget? trailing;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(title,
+                      style:
+                          AppTheme.title(cs.onSurface).copyWith(fontSize: 19)),
+                ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 轻提示小卡。
+class _MiniCard extends StatelessWidget {
+  const _MiniCard({required this.icon, required this.color, required this.text});
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: AppTheme.subhead(cs.onSurface))),
+        ],
+      ),
+    );
+  }
+}
+
+/// 横向时刻卡：竖版照片 + 标题。
+class _MomentCard extends StatelessWidget {
+  const _MomentCard({required this.moment});
+
+  final Moment moment;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final color = momentTypeColor(moment.type);
+    final hasPhoto = moment.imagePaths.isNotEmpty &&
+        ImageStore.exists(moment.imagePaths.first);
+    return GestureDetector(
+      onTap: () => context.push('/moment/${moment.id}/detail'),
+      child: Container(
+        width: 128,
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 96,
+              width: double.infinity,
+              child: hasPhoto
+                  ? Image.file(
+                      File(moment.imagePaths.first),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _coverPlaceholder(color),
+                    )
+                  : _coverPlaceholder(color),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    moment.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.cardTitle(cs.onSurface)
+                        .copyWith(fontSize: 13.5),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${moment.date.month}/${moment.date.day} · ${moment.type.label}',
+                    style: AppTheme.captionSm(color),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _coverPlaceholder(Color color) => Container(
+        color: color.withValues(alpha: 0.14),
+        child: Center(
+          child: Icon(Icons.photo_outlined,
+              size: 26, color: color.withValues(alpha: 0.6)),
+        ),
+      );
+}
+
+/// 到期提醒卡（出行卡风格：渐变圆角图标块 + 信息 + 天数徽章）。
 class _DueCard extends StatelessWidget {
   const _DueCard({required this.due});
 
   final DueItem due;
 
   static const _kindMeta = <String, (Color, IconData)>{
-    // 喜庆：生日亮粉、到家纪念日亮橙。
-    'birthday': (Color(0xFFEC4899), Icons.cake_rounded),
-    'adoption': (Color(0xFFF97316), Icons.home_rounded),
-    // 重要：疫苗亮蓝、驱虫亮紫。
-    'vaccine': (Color(0xFF3B82F6), Icons.vaccines_rounded),
-    'dewormIn': (Color(0xFF8B5CF6), Icons.shield_rounded),
-    'dewormOut': (Color(0xFF8B5CF6), Icons.shield_outlined),
-    // 测量：称重蓝、体型琥珀。
-    'weight': (Color(0xFF3B82F6), Icons.monitor_weight_rounded),
-    'bcs': (Color(0xFFF59E0B), Icons.accessibility_new_rounded),
+    'birthday': (Color(0xFFFF7D9E), Icons.cake_rounded),
+    'adoption': (Color(0xFFF5A83C), Icons.home_rounded),
+    'vaccine': (Color(0xFF5B9BD5), Icons.vaccines_rounded),
+    'dewormIn': (Color(0xFF8B7BD8), Icons.shield_rounded),
+    'dewormOut': (Color(0xFF8B7BD8), Icons.shield_outlined),
+    'weight': (Color(0xFF5B9BD5), Icons.monitor_weight_rounded),
+    'bcs': (Color(0xFFF5A83C), Icons.accessibility_new_rounded),
   };
 
   @override
@@ -409,52 +745,53 @@ class _DueCard extends StatelessWidget {
         _kindMeta[due.kind] ?? (cs.primary, Icons.schedule_rounded);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: kindColor, width: 4),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: kindColor.withValues(alpha: 0.13),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(icon, size: 20, color: kindColor),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    kindColor.withValues(alpha: 0.16),
+                    kindColor.withValues(alpha: 0.32)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(due.title,
-                          style: AppTheme.cardTitle(cs.onSurface)),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${due.date.month}月${due.date.day}日 到期',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: kindColor,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                DueBadge(daysLeft: due.daysLeft, tone: kindColor),
-              ],
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, size: 21, color: kindColor),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(due.title, style: AppTheme.cardTitle(cs.onSurface)),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${due.date.month}月${due.date.day}日 到期',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurfaceVariant,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            DueBadge(daysLeft: due.daysLeft, tone: kindColor),
+          ],
         ),
       ),
     );
@@ -488,7 +825,6 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
   @override
   void didUpdateWidget(covariant _InsightCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 切换宠物后旧洞察立刻失效，避免显示别的宠物的结论。
     if (oldWidget.pet.id != widget.pet.id) {
       _text = null;
       _at = null;
@@ -500,7 +836,6 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
   Future<void> _loadCache() async {
     final json = await ref.read(settingsRepoProvider).getJson(_cacheKey);
     if (json == null || !mounted) return;
-    // 只显示当前宠物的缓存。
     if (json['petId'] != widget.pet.id) return;
     setState(() {
       _text = json['text'] as String?;
@@ -549,99 +884,120 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
     final cs = Theme.of(context).colorScheme;
     final aiReady = ref.watch(aiConfigProvider).isReady;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            cs.primary.withValues(alpha: 0.10),
+            cs.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      colors: AppTheme.primaryGradient),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    size: 18, color: Colors.white),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('AI 近期综合判断',
+                    style: AppTheme.cardTitle(cs.onSurface)),
+              ),
+              if (_at != null && !_loading)
+                Text(
+                  _at!.month == DateTime.now().month &&
+                          _at!.day == DateTime.now().day
+                      ? '今天更新'
+                      : '${_at!.month}/${_at!.day} 更新',
+                  style: AppTheme.captionSm(cs.onSurfaceVariant),
+                ),
+              const SizedBox(width: 6),
+              _loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        _text == null
+                            ? Icons.play_arrow_rounded
+                            : Icons.refresh_rounded,
+                        size: 20,
+                        color: cs.primary,
+                      ),
+                      tooltip: _text == null ? '生成' : '刷新',
+                      onPressed: aiReady ? _generate : null,
+                    ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (!aiReady)
             Row(
               children: [
-                Icon(Icons.auto_awesome_rounded,
-                    size: 18, color: cs.primary),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text('近期综合判断',
-                      style: AppTheme.cardTitle(cs.onSurface)),
-                ),
-                if (_at != null && !_loading)
-                  Text(
-                    _at!.month == DateTime.now().month &&
-                            _at!.day == DateTime.now().day
-                        ? '今天更新'
-                        : '${_at!.month}/${_at!.day} 更新',
-                    style: AppTheme.captionSm(cs.onSurfaceVariant),
-                  ),
-                const SizedBox(width: 6),
-                _loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(
-                          _text == null ? Icons.play_arrow_rounded : Icons.refresh_rounded,
-                          size: 20,
-                          color: cs.primary,
-                        ),
-                        tooltip: _text == null ? '生成' : '刷新',
-                        onPressed: aiReady ? _generate : null,
-                      ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (!aiReady)
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('配置 AI 后，会根据近期到期、体重与症状给出综合建议',
-                        style: AppTheme.subhead(cs.onSurfaceVariant)),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/settings/ai'),
-                    child: const Text('去配置'),
-                  ),
-                ],
-              )
-            else if (_loading && _text == null)
-              Row(
-                children: [
-                  const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  const SizedBox(width: 10),
-                  Text('AI 正在分析近期情况…',
+                  child: Text('配置 AI 后，会根据近期到期、体重与症状给出综合建议',
                       style: AppTheme.subhead(cs.onSurfaceVariant)),
-                ],
-              )
-            else if (_error != null && _text == null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_error!, style: AppTheme.footnote(AppTheme.warnRed)),
-                  TextButton(onPressed: _generate, child: const Text('重试')),
-                ],
-              )
-            else if (_text != null)
-              MarkdownBody(
-                data: _text!,
-                styleSheet: digestMarkdownStyle(context),
-                selectable: true,
-              )
-            else
-              Text('点击右侧按钮，让 AI 结合近期情况给出判断与建议',
-                  style: AppTheme.subhead(cs.onSurfaceVariant)),
-            if (_error != null && _text != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text('（刷新失败：$_error）',
-                    style: AppTheme.captionSm(AppTheme.warnRed)),
-              ),
-          ],
-        ),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/settings/ai'),
+                  child: const Text('去配置'),
+                ),
+              ],
+            )
+          else if (_loading && _text == null)
+            Row(
+              children: [
+                const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox(width: 10),
+                Text('AI 正在分析近期情况…',
+                    style: AppTheme.subhead(cs.onSurfaceVariant)),
+              ],
+            )
+          else if (_error != null && _text == null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_error!, style: AppTheme.footnote(AppTheme.warnRed)),
+                TextButton(onPressed: _generate, child: const Text('重试')),
+              ],
+            )
+          else if (_text != null)
+            MarkdownBody(
+              data: _text!,
+              styleSheet: digestMarkdownStyle(context),
+              selectable: true,
+            )
+          else
+            Text('点击右侧按钮，让 AI 结合近期情况给出判断与建议',
+                style: AppTheme.subhead(cs.onSurfaceVariant)),
+          if (_error != null && _text != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text('（刷新失败：$_error）',
+                  style: AppTheme.captionSm(AppTheme.warnRed)),
+            ),
+        ],
       ),
     );
   }

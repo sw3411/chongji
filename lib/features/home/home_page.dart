@@ -227,12 +227,10 @@ class _HeroSection extends StatelessWidget {
               children: [
                 SizedBox(height: statusTop + 10),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      Expanded(
-                          child:
-                              _PetCapsule(pet: pet, pets: pets, onPhoto: true)),
+                      Expanded(child: _PetTitle(pet: pet, pets: pets)),
                       const SyncButtonLight(),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined,
@@ -244,7 +242,7 @@ class _HeroSection extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: _Greeting(pet: pet, onPhoto: true),
                 ),
                 const SizedBox(height: 18),
@@ -467,73 +465,40 @@ class _AmbientHeader extends StatelessWidget {
   }
 }
 
-/// 宠物身份胶囊：照片头上用毛玻璃，画布上用白瓷片。
-class _PetCapsule extends StatelessWidget {
-  const _PetCapsule({required this.pet, required this.pets, this.onPhoto = false});
+/// 宠物标题：头像 + 名字 + 下拉箭头（与健康页标题同语言，无外框），
+/// 点击弹出宠物切换面板。
+class _PetTitle extends StatelessWidget {
+  const _PetTitle({required this.pet, required this.pets});
 
   final Pet pet;
   final List<Pet> pets;
-  final bool onPhoto;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    Widget content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        PetAvatar(
-          path: pet.avatarPath,
-          speciesIcon: Icons.pets,
-          size: 28,
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            '${pet.name} · ${pet.speciesLabel}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTheme.cardTitle(
-                    onPhoto ? Colors.white : cs.onSurface)
-                .copyWith(fontSize: 13.5),
-          ),
-        ),
-        const SizedBox(width: 2),
-        Icon(Icons.keyboard_arrow_down_rounded,
-            color: onPhoto
-                ? Colors.white70
-                : cs.onSurfaceVariant,
-            size: 20),
-      ],
-    );
-    if (!onPhoto) {
-      return GestureDetector(
-        onTap: () => _showPicker(context),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: content,
-        ),
-      );
-    }
     return GestureDetector(
       onTap: () => _showPicker(context),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-            ),
-            child: content,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PetAvatar(
+            path: pet.avatarPath,
+            speciesIcon: Icons.pets,
+            size: 32,
           ),
-        ),
+          const SizedBox(width: 9),
+          Flexible(
+            child: Text(
+              pet.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.largeTitle(Colors.white, size: 19),
+            ),
+          ),
+          const SizedBox(width: 2),
+          Icon(Icons.keyboard_arrow_down_rounded,
+              color: Colors.white.withValues(alpha: 0.7), size: 22),
+        ],
       ),
     );
   }
@@ -629,7 +594,7 @@ class _Greeting extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$hello，${pet.name}',
+          hello,
           style: AppTheme.largeTitle(mainColor, size: 19),
         ),
         const SizedBox(height: 4),

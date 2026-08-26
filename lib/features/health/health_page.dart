@@ -496,7 +496,7 @@ class _TrendChart extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 30,
+                      reservedSize: 36,
                       interval: range / 2,
                       getTitlesWidget: (v, _) {
                         if (!atFraction(v, 0.5) &&
@@ -506,9 +506,13 @@ class _TrendChart extends StatelessWidget {
                         }
                         return SideTitleWidget(
                           axisSide: AxisSide.left,
-                          child: Text(
-                            v.toStringAsFixed(1),
-                            style: AppTheme.captionSm(inkSec),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              v.toStringAsFixed(1),
+                              maxLines: 1,
+                              style: AppTheme.captionSm(inkSec),
+                            ),
                           ),
                         );
                       },

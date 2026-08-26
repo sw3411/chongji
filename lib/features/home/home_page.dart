@@ -481,16 +481,16 @@ class _SceneCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final onCard = Colors.white.withValues(alpha: 0.95);
     final onCardFaint = Colors.white.withValues(alpha: 0.6);
-    // 半透明陶土渐变：叠在照片上时透出模糊底图，形成毛玻璃质感。
+    // 半透明陶土渐变 + 高斯模糊：与下方照片/画布尽量融合的毛玻璃。
     final gradient = LinearGradient(
       colors: dark
           ? [
-              AppTheme.sceneGradientDark[0].withValues(alpha: 0.82),
-              AppTheme.sceneGradientDark[1].withValues(alpha: 0.94),
+              AppTheme.sceneGradientDark[0].withValues(alpha: 0.58),
+              AppTheme.sceneGradientDark[1].withValues(alpha: 0.80),
             ]
           : [
-              AppTheme.sceneGradientLight[0].withValues(alpha: 0.72),
-              AppTheme.sceneGradientLight[1].withValues(alpha: 0.92),
+              AppTheme.sceneGradientLight[0].withValues(alpha: 0.48),
+              AppTheme.sceneGradientLight[1].withValues(alpha: 0.74),
             ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -501,13 +501,12 @@ class _SceneCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 244),
             decoration: BoxDecoration(
               gradient: gradient,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
@@ -659,60 +658,12 @@ class _SceneCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    // 快捷记录三连。
-                    Row(
-                      children: [
-                        _cardChip(context, Icons.monitor_weight_outlined,
-                            '记体重', () => context.push('/health/record/new',
-                                extra: 'weight')),
-                        const SizedBox(width: 8),
-                        _cardChip(context, Icons.vaccines_outlined, '记疫苗',
-                            () => context.push('/health/record/new',
-                                extra: 'vaccine')),
-                        const SizedBox(width: 8),
-                        _cardChip(context, Icons.photo_camera_outlined, '记时刻',
-                            () => context.push('/moment/new')),
-                      ],
-                    ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-    );
-  }
-
-  Widget _cardChip(
-      BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 34,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.9)),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.92),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

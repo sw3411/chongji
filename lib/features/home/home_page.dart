@@ -330,7 +330,7 @@ class _PetCapsule extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: content,
         ),
@@ -339,14 +339,14 @@ class _PetCapsule extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showPicker(context),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
             ),
             child: content,
@@ -690,7 +690,7 @@ class _QuickActions extends StatelessWidget {
                   color: dark
                       ? Colors.white.withValues(alpha: 0.06)
                       : Colors.white,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: iconColor, size: 19),
               ),

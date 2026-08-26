@@ -61,7 +61,7 @@ class AppTheme {
   /// 文字：墨色三级（暖灰调）。
   static const Color ink = Color(0xFF292420);
   static const Color inkSecondary = Color(0xFF9C948B);
-  static const Color inkTertiary = Color(0xFFC2BAB1);
+  static const Color inkTertiary = Color(0xFFAEA69C);
 
   /// 浅色：暖纸画布 + 白瓷片 + 片内发丝线。
   static const Color lightBg = Color(0xFFF3F0EA);
@@ -200,15 +200,15 @@ class AppTheme {
             ? const Color(0xFFF5F2EC)
             : darkSurfaceAlt,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: cs.primary, width: 1.4),
         ),
         contentPadding:

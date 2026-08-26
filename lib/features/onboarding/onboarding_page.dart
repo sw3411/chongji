@@ -30,12 +30,6 @@ class OnboardingHost extends ConsumerWidget {
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Color(0x40FF8A4C),
-                        blurRadius: 24,
-                        offset: Offset(0, 10)),
-                  ],
                 ),
                 child: const Icon(Icons.pets, color: Colors.white, size: 46),
               ),
@@ -116,7 +110,7 @@ class _FeatureRow extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(icon, color: color, size: 24),
         ),

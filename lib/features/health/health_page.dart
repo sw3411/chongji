@@ -98,28 +98,23 @@ class _HealthPageState extends ConsumerState<HealthPage> {
             records.any((r) => r.type == HealthRecordType.dewormIn) ||
             records.any((r) => r.type == HealthRecordType.dewormOut);
 
-    return Scaffold(
-      backgroundColor: dark ? AppTheme.darkBg : AppTheme.lightBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text('${pet.name} · 健康',
-            style: AppTheme.cardTitle(dark ? Colors.white : AppTheme.ink)),
-        actions: [
-          const SyncButton(),
-          IconButton(
-            icon: Icon(Icons.calendar_month_outlined,
-                color: dark ? Colors.white70 : AppTheme.inkSecondary),
-            tooltip: '日历',
-            onPressed: () => context.push('/calendar'),
-          ),
-          IconButton(
-            icon: Icon(Icons.add,
-                color: dark ? Colors.white70 : AppTheme.inkSecondary),
-            tooltip: '添加记录',
-            onPressed: () => context.push('/health/record/new'),
-          ),
-        ],
-      ),
+    return PageScaffold(
+      title: '${pet.name} · 健康',
+      actions: [
+        const SyncButton(),
+        IconButton(
+          icon: Icon(Icons.calendar_month_outlined,
+              color: dark ? Colors.white70 : AppTheme.inkSecondary),
+          tooltip: '日历',
+          onPressed: () => context.push('/calendar'),
+        ),
+        IconButton(
+          icon: Icon(Icons.add,
+              color: dark ? Colors.white70 : AppTheme.inkSecondary),
+          tooltip: '添加记录',
+          onPressed: () => context.push('/health/record/new'),
+        ),
+      ],
       body: sorted.isEmpty
           ? EmptyView(
               icon: Icons.monitor_heart_outlined,
@@ -130,7 +125,9 @@ class _HealthPageState extends ConsumerState<HealthPage> {
                 child: const Text('记第一条'),
               ),
             )
-          : ListView(
+          : RefreshIndicator.adaptive(
+              onRefresh: () => manualSyncCurrentPet(ref, context),
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
               children: [
                 // ---- 顶部数据区：大数字直接落在画布上 ----
@@ -200,6 +197,7 @@ class _HealthPageState extends ConsumerState<HealthPage> {
                 else
                   ..._groupedByMonth(filtered, prevById, dark),
               ],
+            ),
             ),
     );
   }
@@ -394,6 +392,35 @@ class _DataHeader extends StatelessWidget {
                   style: AppTheme.captionSm(inkTer)),
             ],
           ),
+          const SizedBox(height: 14),
+          // BCS 九档刻度：当前档陶土高亮，5 档（理想）稍深作参照。
+          Row(
+            children: [
+              Text('1', style: AppTheme.captionSm(inkTer)),
+              const SizedBox(width: 6),
+              for (var i = 1; i <= 9; i++) ...[
+                Container(
+                  width: i == bcs ? 20 : 7,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: bcs == null
+                        ? inkTer.withValues(alpha: 0.35)
+                        : i == bcs
+                            ? AppTheme.green
+                            : i == 5
+                                ? inkSec.withValues(alpha: 0.45)
+                                : inkTer.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                if (i < 9) const SizedBox(width: 4),
+              ],
+              const SizedBox(width: 6),
+              Text('9', style: AppTheme.captionSm(inkTer)),
+              const Spacer(),
+              Text('5 为理想体型', style: AppTheme.captionSm(inkTer)),
+            ],
+          ),
         ],
       ),
     );
@@ -519,7 +546,57 @@ class _TrendChart extends StatelessWidget {
                     ),
                   ),
                 ),
-                lineTouchData: const LineTouchData(enabled: false),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchSpotThreshold: 32,
+                  // 触控指示：竖向发丝线 + 放大端点。
+                  getTouchedSpotIndicator: (bar, spotIndexes) => [
+                    for (final _ in spotIndexes)
+                      TouchedSpotIndicatorData(
+                        FlLine(
+                          color: weightColor.withValues(alpha: 0.35),
+                          strokeWidth: 1.2,
+                        ),
+                        FlDotData(
+                          show: true,
+                          getDotPainter: (spot, x, b, i) =>
+                              FlDotCirclePainter(
+                            radius: 4.5,
+                            color: weightColor,
+                            strokeWidth: 2.5,
+                            strokeColor: surface,
+                          ),
+                        ),
+                      ),
+                  ],
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => surface,
+                    tooltipRoundedRadius: 12,
+                    tooltipPadding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    tooltipBorder: BorderSide(
+                        color: dark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : AppTheme.lightDivider),
+                    getTooltipItems: (spots) => [
+                      for (final s in spots)
+                        () {
+                          final d = first.add(Duration(days: s.x.toInt()));
+                          return LineTooltipItem(
+                            '${d.month}/${d.day}  ${s.y.toStringAsFixed(1)} kg',
+                            TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: dark ? Colors.white : AppTheme.ink,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          );
+                        }(),
+                    ],
+                  ),
+                ),
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots,
@@ -591,7 +668,7 @@ class _ChartTeaser extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
               decoration: BoxDecoration(
                 color: AppTheme.green.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Text('记体重',
                   style: TextStyle(
@@ -792,7 +869,7 @@ class _RecordRow extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(recordTypeIcon(record.type), size: 16, color: color),
       ),
@@ -942,7 +1019,7 @@ class _TypeChip extends StatelessWidget {
                 : (dark
                     ? Colors.white.withValues(alpha: 0.05)
                     : Colors.white),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             label,

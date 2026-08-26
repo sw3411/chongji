@@ -51,28 +51,26 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
         now: _month);
     final avg = StatisticsService.monthlyAverage(expenses, now: _month);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('账本'),
-        actions: [
-          const SyncButton(),
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: '导出 CSV',
-            onPressed: () async {
-              await ref
-                  .read(backupServiceProvider)
-                  .exportCsv(expenses, {for (final p in pets) p.id: p.name});
-              if (context.mounted) showAutoToast(context, '已导出 CSV');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: '记一笔',
-            onPressed: () => context.push('/expense/new'),
-          ),
-        ],
-      ),
+    return PageScaffold(
+      title: '账本',
+      actions: [
+        const SyncButton(),
+        IconButton(
+          icon: const Icon(Icons.file_download_outlined),
+          tooltip: '导出 CSV',
+          onPressed: () async {
+            await ref
+                .read(backupServiceProvider)
+                .exportCsv(expenses, {for (final p in pets) p.id: p.name});
+            if (context.mounted) showAutoToast(context, '已导出 CSV');
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.add),
+          tooltip: '记一笔',
+          onPressed: () => context.push('/expense/new'),
+        ),
+      ],
       body: expenses.isEmpty
           ? EmptyView(
               icon: Icons.account_balance_wallet_outlined,
@@ -83,7 +81,9 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
                 child: const Text('记第一笔'),
               ),
             )
-          : ListView(
+          : RefreshIndicator.adaptive(
+              onRefresh: () => manualSyncCurrentPet(ref, context),
+              child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 // 月份切换 + 月度大数字。
@@ -310,6 +310,7 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
                 ),
                 const SizedBox(height: 24),
               ],
+            ),
             ),
     );
   }

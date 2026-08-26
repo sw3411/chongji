@@ -26,7 +26,7 @@ class PetDetailPage extends ConsumerWidget {
       if (p.id == petId) pet = p;
     }
     if (pet == null) {
-      return const Scaffold(body: loadingView);
+      return Scaffold(body: loadingView);
     }
     final p0 = pet; // 闭包内无法依赖外层的空提升，落到不可空局部变量。
     final records = ref.watch(healthRecordsProvider(p0.id)).valueOrNull ??

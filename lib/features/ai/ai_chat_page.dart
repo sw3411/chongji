@@ -441,7 +441,9 @@ class _BubbleState extends State<_Bubble> {
     final m = widget.message;
     final isUser = m.isUser;
     final bubbleColor =
-        isUser ? (dark ? AppTheme.greenBubble : AppTheme.bubbleOut) : cs.surface;
+        isUser
+        ? (dark ? AppTheme.greenBubble : AppTheme.green.withValues(alpha: 0.14))
+        : cs.surface;
     final textColor =
         isUser ? (dark ? Colors.white : AppTheme.ink) : cs.onSurface;
 
@@ -459,8 +461,8 @@ class _BubbleState extends State<_Bubble> {
         decoration: BoxDecoration(
           color: bubbleColor,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
             bottomLeft: Radius.circular(isUser ? 18 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),

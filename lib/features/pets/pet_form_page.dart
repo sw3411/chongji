@@ -208,7 +208,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (!_loaded) return const Scaffold(body: loadingView);
+    if (!_loaded) return Scaffold(body: loadingView);
 
     return Scaffold(
       appBar: AppBar(
@@ -311,7 +311,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                     spacing: 8,
                     children: [
                       (PetGender.male, '男孩', AppTheme.infoBlue),
-                      (PetGender.female, '女孩', const Color(0xFFB85C7A)),
+                      (PetGender.female, '女孩', AppTheme.rose),
                       (PetGender.unknown, '不填', cs.onSurfaceVariant),
                     ]
                         .map((e) => SelectChip(

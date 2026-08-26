@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -140,6 +141,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
       await _resyncReminders();
       autoPushIfNeeded(ref, _petId);
       if (mounted) {
+        HapticFeedback.mediumImpact();
         showAutoToast(context, '已保存');
         context.pop();
       }
@@ -195,7 +197,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (_loading) return const Scaffold(body: loadingView);
+    if (_loading) return Scaffold(body: loadingView);
 
     return Scaffold(
       appBar: AppBar(
@@ -208,6 +210,10 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
               onPressed: _delete,
             ),
         ],
+      ),
+      bottomNavigationBar: FormSaveBar(
+        loading: _saving,
+        onPressed: _saving ? null : _save,
       ),
       body: Form(
         key: _formKey,
@@ -439,7 +445,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
                               decoration: BoxDecoration(
                                 color: cs.surfaceContainerHighest
                                     .withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: cs.outlineVariant),
                               ),
                               child: Icon(Icons.add_photo_alternate_outlined,
@@ -452,18 +458,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('保存'),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -546,7 +541,7 @@ class _BcsSelector extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: _bands[level.band]!.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(level.description,
                     style: AppTheme.footnote(cs.onSurface)),

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'theme.dart';
@@ -65,7 +66,10 @@ class AppShell extends StatelessWidget {
 
     Widget centerButton() {
       return GestureDetector(
-        onTap: () => _showAddMenu(context),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showAddMenu(context);
+        },
         child: Semantics(
           label: '记一笔',
           button: true,
@@ -99,7 +103,7 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           // 毛玻璃：背景模糊 + 半透明表面 + 发丝描边。
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
@@ -107,7 +111,7 @@ class AppShell extends StatelessWidget {
               height: 60,
               decoration: BoxDecoration(
                 color: AppTheme.glassSurface(dark),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppTheme.glassBorder(dark)),
               ),
               child: Row(

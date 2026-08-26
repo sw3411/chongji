@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -127,6 +128,7 @@ Future<void> manualSyncCurrentPet(WidgetRef ref, BuildContext context) async {
   try {
     final outcome = await ref.read(spaceSyncProvider).sync(space);
     if (!context.mounted) return;
+    HapticFeedback.mediumImpact();
     showAutoToast(context, switch (outcome) {
       SyncOutcome.pushed => '已同步并推送最新修改 ✅',
       SyncOutcome.pulled => '已拉取最新数据（本地无修改）',

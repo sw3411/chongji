@@ -102,7 +102,7 @@ class _DietPreferencesPageState extends ConsumerState<DietPreferencesPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (_loading) return const Scaffold(body: loadingView);
+    if (_loading) return Scaffold(body: loadingView);
     final pet = ref.watch(currentPetProvider);
 
     return Scaffold(

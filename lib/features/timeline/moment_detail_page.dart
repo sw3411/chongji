@@ -118,7 +118,10 @@ class _DetailPage extends StatelessWidget {
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => PhotoViewer(paths: photos),
                       )),
-                      child: _BigImage(path: photos.first),
+                      child: Hero(
+                        tag: 'moment-cover-${moment.id}',
+                        child: _BigImage(path: photos.first),
+                      ),
                     )
                   : PageView.builder(
                       itemCount: photos.length,
@@ -130,7 +133,12 @@ class _DetailPage extends StatelessWidget {
                         )),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: _BigImage(path: photos[i]),
+                          child: i == 0
+                              ? Hero(
+                                  tag: 'moment-cover-${moment.id}',
+                                  child: _BigImage(path: photos[i]),
+                                )
+                              : _BigImage(path: photos[i]),
                         ),
                       ),
                     ),

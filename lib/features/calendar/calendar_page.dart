@@ -208,9 +208,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     color: isSelected
                         ? cs.primary.withValues(alpha: 0.10)
                         : null,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     border: isSelected
-                        ? Border.all(color: cs.primary, width: 1.4)
+                        ? Border.all(
+                            color: cs.primary.withValues(alpha: 0.35))
                         : null,
                   ),
                   child: Column(
@@ -221,7 +222,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                             horizontal: 6, vertical: 1),
                         decoration: isToday
                             ? const BoxDecoration(
-                                color: AppTheme.greenLight,
+                                color: AppTheme.green,
                                 shape: BoxShape.circle,
                               )
                             : null,
@@ -230,11 +231,13 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: isToday || isSelected
-                                ? FontWeight.w800
+                                ? FontWeight.w600
                                 : FontWeight.w400,
                             color: isToday
                                 ? Colors.white
-                                : cs.onSurface,
+                                : isSelected
+                                    ? cs.primary
+                                    : cs.onSurface,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -287,7 +290,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                         height: 38,
                         decoration: BoxDecoration(
                           color: e.color.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(e.icon, size: 19, color: e.color),
                       ),

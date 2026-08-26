@@ -14,7 +14,7 @@ import '../../domain/models/pet.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/sync_button.dart';
 
-/// 时刻：单列瀑布流（大图流）+ 无限下滑分页。
+/// 时刻：单列瀑布流（大图流）+ 粘性月份头 + 无限下滑分页 + 下拉同步。
 class TimelinePage extends ConsumerStatefulWidget {
   const TimelinePage({super.key});
 
@@ -66,6 +66,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     });
   }
 
+  /// 按月分组（倒序），供粘性月份头使用。
+  List<(String, List<Moment>)> _groupMonths(List<Moment> items) {
+    final groups = <String, List<Moment>>{};
+    for (final m in items) {
+      groups.putIfAbsent('${m.date.year}年${m.date.month}月', () => []).add(m);
+    }
+    return [for (final e in groups.entries) (e.key, e.value)];
+  }
+
   @override
   Widget build(BuildContext context) {
     final moments =
@@ -74,6 +83,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     final sorted = [...moments]..sort((a, b) => b.date.compareTo(a.date));
     final visible = sorted.take(_limit).toList();
     final hasMore = _limit < sorted.length;
+    final groups = _groupMonths(visible);
 
     String petName(String id) {
       for (final p in pets) {
@@ -82,11 +92,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       return '';
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('时刻'),
-        actions: [const SyncButton()],
-      ),
+    return PageScaffold(
+      title: '时刻',
+      actions: const [SyncButton()],
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/moment/new'),
         tooltip: '记录时刻',
@@ -102,29 +110,83 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 child: const Text('记录第一个时刻'),
               ),
             )
-          : MasonryGridView.count(
-              controller: _scrollController,
-              crossAxisCount: 1,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 0,
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-              itemCount: visible.length + (hasMore || _loadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= visible.length) {
-                  return _LoadMoreCell(
-                    loading: _loadingMore,
-                    onTap: _loadMore,
-                  );
-                }
-                final m = visible[index];
-                return _MomentCell(
-                  moment: m,
-                  petName: petName(m.petId),
-                );
-              },
+          : RefreshIndicator.adaptive(
+              onRefresh: () => manualSyncCurrentPet(ref, context),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  for (final (label, items) in groups) ...[
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _MonthHeaderDelegate(label),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+                      sliver: SliverMasonryGrid.count(
+                        crossAxisCount: 1,
+                        mainAxisSpacing: 12,
+                        childCount: items.length,
+                        itemBuilder: (context, i) => _MomentCell(
+                          moment: items[i],
+                          petName: petName(items[i].petId),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (hasMore || _loadingMore)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: _LoadMoreCell(
+                          loading: _loadingMore,
+                          onTap: _loadMore,
+                        ),
+                      ),
+                    ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
+                ],
+              ),
             ),
     );
   }
+}
+
+/// 粘性月份头：悬浮时用画布色遮住下方滚动内容。
+class _MonthHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _MonthHeaderDelegate(this.text);
+
+  final String text;
+
+  @override
+  double get minExtent => 34;
+
+  @override
+  double get maxExtent => 34;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      color: dark ? AppTheme.darkBg : AppTheme.lightBg,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1,
+          color: dark ? Colors.white30 : AppTheme.inkTertiary,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_MonthHeaderDelegate oldDelegate) =>
+      oldDelegate.text != text;
 }
 
 /// 加载更多占位格。
@@ -159,7 +221,7 @@ class _LoadMoreCell extends StatelessWidget {
   }
 }
 
-/// 瀑布流单卡：封面图随内容自然高度（小红书式双列流）。
+/// 瀑布流单卡：封面图随内容自然高度（单列大图流）。
 class _MomentCell extends StatelessWidget {
   const _MomentCell({required this.moment, required this.petName});
 
@@ -188,12 +250,14 @@ class _MomentCell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 封面：照片自然高度；无照片用类型色块。
+            // 封面：照片自然高度；无照片用类型色块。Hero 飞入详情页。
             if (photos.isNotEmpty)
               Stack(
                 children: [
-                  // 整卡统一进详情页（大图在详情里看），不再单独拦截照片点击。
-                  _CoverImage(path: photos.first),
+                  Hero(
+                    tag: 'moment-cover-${moment.id}',
+                    child: _CoverImage(path: photos.first),
+                  ),
                   if (photos.length > 1)
                     Positioned(
                       right: 8,
@@ -203,7 +267,7 @@ class _MomentCell extends StatelessWidget {
                             horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.black54,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -112,6 +113,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
           ));
       autoPushIfNeeded(ref, _petId);
       if (mounted) {
+        HapticFeedback.mediumImpact();
         showAutoToast(context, '已记录');
         context.pop();
       }
@@ -152,7 +154,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (_loading) return const Scaffold(body: loadingView);
+    if (_loading) return Scaffold(body: loadingView);
     final pets = ref.watch(petsProvider).valueOrNull ?? const <Pet>[];
 
     return Scaffold(
@@ -166,6 +168,10 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
               onPressed: _delete,
             ),
         ],
+      ),
+      bottomNavigationBar: FormSaveBar(
+        loading: _saving,
+        onPressed: _saving ? null : _save,
       ),
       body: Form(
         key: _formKey,
@@ -337,18 +343,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('保存'),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),

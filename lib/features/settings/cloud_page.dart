@@ -319,7 +319,7 @@ class _CloudPageState extends ConsumerState<CloudPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(recovery,
                   style: AppTheme.bigNumber(Theme.of(context).colorScheme.primary, size: 18)),

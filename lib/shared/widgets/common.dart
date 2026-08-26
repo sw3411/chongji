@@ -5,6 +5,112 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../app/theme.dart';
 import '../../domain/models/enums.dart';
 
+/// Tab 页统一骨架：环境光渐变头部 + 大标题 + 动作区。
+/// 五个底部 Tab 共用同一头部节奏（与首页问候头一致）。
+class PageScaffold extends StatelessWidget {
+  const PageScaffold({
+    super.key,
+    required this.title,
+    required this.body,
+    this.actions,
+    this.floatingActionButton,
+  });
+
+  final String title;
+  final Widget body;
+  final List<Widget>? actions;
+  final Widget? floatingActionButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor: dark ? AppTheme.darkBg : AppTheme.lightBg,
+      floatingActionButton: floatingActionButton,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: dark
+                ? AppTheme.headerGradientDark
+                : AppTheme.headerGradientLight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0, 0.25],
+          ),
+        ),
+        child: Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 8, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTheme.largeTitle(
+                            dark ? Colors.white : AppTheme.ink,
+                            size: 19),
+                      ),
+                    ),
+                    ...?actions,
+                  ],
+                ),
+              ),
+            ),
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 表单底部常驻保存栏：悬浮瓷片 + 全宽按钮（长表单保存不随滚动消失）。
+class FormSaveBar extends StatelessWidget {
+  const FormSaveBar({
+    super.key,
+    this.label = '保存',
+    this.loading = false,
+    this.onPressed,
+  });
+
+  final String label;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: dark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          border: dark
+              ? Border.all(color: Colors.white.withValues(alpha: 0.06))
+              : null,
+        ),
+        child: FilledButton(
+          onPressed: onPressed,
+          child: loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(label),
+        ),
+      ),
+    );
+  }
+}
+
 /// 空状态占位。
 class EmptyView extends StatelessWidget {
   const EmptyView({
@@ -70,7 +176,7 @@ class TypeChip extends StatelessWidget {
           horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -196,7 +302,7 @@ class SelectChip extends StatelessWidget {
           color: selected
               ? base.withValues(alpha: 0.13)
               : (dark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -333,7 +439,7 @@ class DueBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
@@ -532,7 +638,64 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-const loadingView = Center(child: CircularProgressIndicator());
+/// 骨架屏加载态：灰块脉冲（替代转圈，更产品化）。
+final loadingView = _SkeletonView();
+
+class _SkeletonView extends StatefulWidget {
+  @override
+  State<_SkeletonView> createState() => _SkeletonViewState();
+}
+
+class _SkeletonViewState extends State<_SkeletonView>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final block = dark
+        ? Colors.white.withValues(alpha: 0.05)
+        : const Color(0xFFEDEAE3);
+    Widget bar(double height, {double? width}) => Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            color: block,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        );
+    return FadeTransition(
+      opacity: Tween(begin: 1.0, end: 0.45)
+          .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              bar(72),
+              const SizedBox(height: 12),
+              bar(20, width: 180),
+              const SizedBox(height: 12),
+              bar(120),
+              const SizedBox(height: 12),
+              bar(120),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// 展示 4 秒自动消失的 SnackBar。
 void showAutoToast(

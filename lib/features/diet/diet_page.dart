@@ -31,8 +31,8 @@ class _DietPageState extends ConsumerState<DietPage> {
   Widget build(BuildContext context) {
     final pets = ref.watch(petsProvider).valueOrNull ?? const <Pet>[];
     if (pets.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('饮食')),
+      return PageScaffold(
+        title: '饮食',
         body: EmptyView(
           icon: Icons.pets,
           title: '先添加一只宠物吧',
@@ -61,18 +61,16 @@ class _DietPageState extends ConsumerState<DietPage> {
     final estimate = DietCalculator.dailyKcal(pet, records,
         breedTypicalKg: breed == null ? null : (breed.minKg + breed.maxKg) / 2);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${pet.name} · 饮食'),
-        actions: [
-          const SyncButton(),
-          IconButton(
-            icon: const Icon(Icons.tune_outlined),
-            tooltip: '饮食偏好',
-            onPressed: () => context.push('/diet/preferences'),
-          ),
-        ],
-      ),
+    return PageScaffold(
+      title: '${pet.name} · 饮食',
+      actions: [
+        const SyncButton(),
+        IconButton(
+          icon: const Icon(Icons.tune_outlined),
+          tooltip: '饮食偏好',
+          onPressed: () => context.push('/diet/preferences'),
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

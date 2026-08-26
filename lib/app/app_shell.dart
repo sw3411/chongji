@@ -83,15 +83,21 @@ class AppShell extends StatelessWidget {
                     label: '记一笔',
                     button: true,
                     child: Container(
-                      width: 54,
-                      height: 54,
+                      width: 56,
+                      height: 56,
                       margin: const EdgeInsets.only(bottom: 4),
                       decoration: BoxDecoration(
-                        color: dark ? AppTheme.greenDark : AppTheme.green,
+                        gradient: const LinearGradient(
+                          colors: AppTheme.primaryGradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
+                        boxShadow: AppTheme.softShadow(
+                            const Color(0x33FF8A4C)),
                       ),
                       child:
-                          const Icon(Icons.add, color: Colors.white, size: 30),
+                          const Icon(Icons.pets, color: Colors.white, size: 26),
                     ),
                   ),
                 ),

@@ -24,10 +24,20 @@ class OnboardingHost extends ConsumerWidget {
                 width: 96,
                 height: 96,
                 decoration: const BoxDecoration(
-                  color: AppTheme.green,
+                  gradient: LinearGradient(
+                    colors: AppTheme.primaryGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Color(0x40FF8A4C),
+                        blurRadius: 24,
+                        offset: Offset(0, 10)),
+                  ],
                 ),
-                child: const Icon(Icons.pets, color: Colors.white, size: 48),
+                child: const Icon(Icons.pets, color: Colors.white, size: 46),
               ),
               const SizedBox(height: 28),
               Text(AppInfo.appName, style: AppTheme.largeTitle(cs.onSurface, size: 40)),
@@ -36,21 +46,21 @@ class OnboardingHost extends ConsumerWidget {
               const Spacer(),
               _FeatureRow(
                 icon: Icons.monitor_heart_rounded,
-                color: AppTheme.green,
+                color: AppTheme.mint,
                 title: '健康管理',
                 subtitle: '体重曲线、疫苗驱虫到期提醒、就诊记录',
               ),
               const SizedBox(height: 18),
               _FeatureRow(
                 icon: Icons.restaurant_rounded,
-                color: AppTheme.warnAmber,
+                color: AppTheme.honey,
                 title: 'AI 饮食计划',
                 subtitle: '按体重体型与口味偏好，生成每天每餐怎么喂',
               ),
               const SizedBox(height: 18),
               _FeatureRow(
                 icon: Icons.photo_camera_back_rounded,
-                color: AppTheme.infoBlue,
+                color: AppTheme.sakura,
                 title: '时刻与账本',
                 subtitle: '照片时间线记录成长，消费笔笔清楚',
               ),

@@ -332,7 +332,7 @@ class _PetDropdown extends StatelessWidget {
                       fontSize: 15,
                       fontWeight: p.id == pet.id ? FontWeight.w700 : FontWeight.w400,
                       color: p.id == pet.id
-                          ? const Color(0xFF25D366)
+                          ? AppTheme.greenLight
                           : Colors.white,
                     ),
                   ),

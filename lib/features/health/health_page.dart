@@ -463,32 +463,15 @@ class _TrendChart extends StatelessWidget {
     final spots = [
       for (final r in weights) FlSpot(xOf(r.date), r.value!),
     ];
-    final spanDays = lastDate.difference(first).inDays;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 14, 2, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                Text('近 $spanDays 天体重',
-                    style: AppTheme.label(
-                        dark ? Colors.white30 : AppTheme.inkTertiary)),
-                const Spacer(),
-                Text('单位 kg', style: AppTheme.captionSm(inkSec)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                minX: 0,
-                maxX: maxX,
+      child: SizedBox(
+        height: 200,
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: maxX,
                 minY: minY,
                 maxY: maxY,
                 gridData: const FlGridData(show: false),
@@ -628,9 +611,7 @@ class _TrendChart extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
+        ),
     );
   }
 }

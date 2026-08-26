@@ -62,12 +62,12 @@ class AppTheme {
   static const Color okGreen = Color(0xFF3BB273);
   static const Color infoBlue = Color(0xFF5B9BD5);
 
-  /// 卡片圆角：出行卡风格超大圆角。
-  static const double cardRadius = 24;
+  /// 卡片圆角：精致化微收。
+  static const double cardRadius = 20;
 
-  /// 软投影（暖色调、低透明度、大扩散）。
-  static List<BoxShadow> softShadow([Color base = const Color(0x143D2E26)]) => [
-        BoxShadow(color: base, blurRadius: 16, offset: const Offset(0, 6)),
+  /// 软投影：更轻（避免多卡堆叠的漂浮感），仅核心卡使用。
+  static List<BoxShadow> softShadow([Color base = const Color(0x083D2E26)]) => [
+        BoxShadow(color: base, blurRadius: 10, offset: const Offset(0, 3)),
       ];
 
   static ThemeData light() {
@@ -125,17 +125,17 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
-          fontSize: 25,
+          fontSize: 19.5,
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
           color: cs.onSurface,
         ),
       ),
       cardTheme: CardThemeData(
         color: cs.surface,
-        // 暖萌质感：软投影 + 大圆角。
-        elevation: 1.2,
-        shadowColor: const Color(0x143D2E26),
+        // 精致质感：极轻投影。
+        elevation: 0.5,
+        shadowColor: const Color(0x0A3D2E26),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
@@ -147,9 +147,9 @@ class AppTheme {
           backgroundColor: cs.primary,
           foregroundColor: cs.onPrimary,
           shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
-          minimumSize: const Size(48, 48),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+          minimumSize: const Size(44, 44),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -193,7 +193,7 @@ class AppTheme {
           borderSide: BorderSide(color: cs.primary, width: 1.8),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         showDragHandle: true,
@@ -239,75 +239,75 @@ class AppTheme {
 
   // ---------- 字号阶梯（页面直接引用，规格不变） ----------
 
-  /// 大标题：34/w700，页面主视觉与汇总大数字。
-  static TextStyle largeTitle(Color color, {double size = 34}) => TextStyle(
+  /// 大标题：24/w800，页面主视觉与汇总大数字（字阶压缩版）。
+  static TextStyle largeTitle(Color color, {double size = 24}) => TextStyle(
         fontSize: size,
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.8,
+        letterSpacing: -0.5,
         height: 1.12,
         color: color,
       );
 
-  /// 区块大标题：23/w800。
+  /// 区块大标题：18.5/w800。
   static TextStyle title(Color color) => TextStyle(
-        fontSize: 23,
+        fontSize: 18.5,
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.3,
+        letterSpacing: -0.2,
         height: 1.2,
         color: color,
       );
 
-  /// 卡片/列表主标题：17/w700。
+  /// 卡片/列表主标题：15.5/w700。
   static TextStyle cardTitle(Color color) => TextStyle(
-        fontSize: 17,
+        fontSize: 15.5,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.2,
+        letterSpacing: -0.1,
         height: 1.3,
         color: color,
       );
 
-  /// 正文：16/w400。
+  /// 正文：14.5/w400。
   static TextStyle body(Color color) => TextStyle(
-        fontSize: 16,
+        fontSize: 14.5,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: color,
       );
 
-  /// 次要行：14/w400 灰。
+  /// 次要行：13/w400 灰。
   static TextStyle subhead(Color color) => TextStyle(
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w400,
         height: 1.45,
         color: color,
       );
 
-  /// 脚注：13/w400。
+  /// 脚注：12/w400。
   static TextStyle footnote(Color color) => TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-        color: color,
-      );
-
-  /// 时间戳/单位：12/w400 三级色。
-  static TextStyle caption(Color color) => TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         height: 1.4,
         color: color,
       );
 
-  /// 更小的时间戳：11/w400。
-  static TextStyle captionSm(Color color) => TextStyle(
+  /// 时间戳/单位：11/w400 三级色。
+  static TextStyle caption(Color color) => TextStyle(
         fontSize: 11,
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+        color: color,
+      );
+
+  /// 更小的时间戳：10.5/w400。
+  static TextStyle captionSm(Color color) => TextStyle(
+        fontSize: 10.5,
         fontWeight: FontWeight.w400,
         height: 1.35,
         color: color,
       );
 
   /// 大数字：等宽数字 + 加粗（体重、金额、倒计时）。
-  static TextStyle bigNumber(Color color, {double size = 24}) => TextStyle(
+  static TextStyle bigNumber(Color color, {double size = 20}) => TextStyle(
         fontSize: size,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.6,
@@ -318,7 +318,7 @@ class AppTheme {
 
   /// 区块小标题：11.5/w700 +0.6 字距。
   static TextStyle label(Color color) => TextStyle(
-        fontSize: 11.5,
+        fontSize: 10.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
         color: color,

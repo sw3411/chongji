@@ -115,7 +115,7 @@ class HomePage extends ConsumerWidget {
               bcs: bcs?.value?.toInt(),
               nextDue: nextDue,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             // 金刚位。
             const _QuickActions(),
             const SizedBox(height: 8),
@@ -139,11 +139,7 @@ class HomePage extends ConsumerWidget {
                       color: AppTheme.okGreen,
                       text: '近期没有疫苗 / 驱虫 / 生日到期，一切都在计划中 👌',
                     )
-                  : Column(
-                      children: [
-                        for (final due in dues.take(3)) _DueCard(due: due),
-                      ],
-                    ),
+                  : _DueGroup(dues: dues.take(3).toList()),
             ),
             // 最近时刻。
             if (petMoments.isNotEmpty)
@@ -328,7 +324,7 @@ class _Greeting extends StatelessWidget {
       children: [
         Text(
           '$hello，${pet.name} 🐾',
-          style: AppTheme.largeTitle(cs.onSurface, size: 28),
+          style: AppTheme.largeTitle(cs.onSurface, size: 21.5),
         ),
         const SizedBox(height: 4),
         Text(
@@ -377,7 +373,7 @@ class _HeroCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(value,
-                        style: AppTheme.bigNumber(numberColor, size: 28)),
+                        style: AppTheme.bigNumber(numberColor, size: 22)),
                     if (unit != null) ...[
                       const SizedBox(width: 2),
                       Text(unit, style: AppTheme.caption(cs.onSurfaceVariant)),
@@ -404,7 +400,7 @@ class _HeroCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
+        padding: const EdgeInsets.fromLTRB(6, 16, 6, 12),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -493,7 +489,7 @@ class _HeroCard extends StatelessWidget {
 
   Widget _statDivider(ColorScheme cs) => Container(
         width: 1,
-        height: 40,
+        height: 36,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         color: cs.outlineVariant.withValues(alpha: 0.6),
       );
@@ -532,24 +528,24 @@ class _QuickActions extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                       colors: colors,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                        color: colors[1].withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5)),
+                        color: colors[1].withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4)),
                   ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 25),
+                child: Icon(icon, color: Colors.white, size: 21),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 6),
               Text(label,
                   style: AppTheme.footnote(cs.onSurface)
                       .copyWith(fontWeight: FontWeight.w600)),
@@ -593,7 +589,7 @@ class _HomeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 22),
+      padding: const EdgeInsets.only(top: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -604,7 +600,7 @@ class _HomeSection extends StatelessWidget {
                 Expanded(
                   child: Text(title,
                       style:
-                          AppTheme.title(cs.onSurface).copyWith(fontSize: 19)),
+                          AppTheme.title(cs.onSurface).copyWith(fontSize: 16.5, letterSpacing: 0.1)),
                 ),
                 if (trailing != null) trailing!,
               ],
@@ -637,12 +633,11 @@ class _MiniCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: 17, color: color),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: AppTheme.subhead(cs.onSurface))),
         ],
@@ -666,7 +661,7 @@ class _MomentCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/moment/${moment.id}/detail'),
       child: Container(
-        width: 128,
+        width: 118,
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(18),
@@ -677,7 +672,7 @@ class _MomentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 96,
+              height: 88,
               width: double.infinity,
               child: hasPhoto
                   ? Image.file(
@@ -722,11 +717,11 @@ class _MomentCard extends StatelessWidget {
       );
 }
 
-/// 到期提醒卡（出行卡风格：渐变圆角图标块 + 信息 + 天数徽章）。
-class _DueCard extends StatelessWidget {
-  const _DueCard({required this.due});
+/// 到期提醒组：一张卡内多行分区（细分隔线），避免多卡堆叠。
+class _DueGroup extends StatelessWidget {
+  const _DueGroup({required this.dues});
 
-  final DueItem due;
+  final List<DueItem> dues;
 
   static const _kindMeta = <String, (Color, IconData)>{
     'birthday': (Color(0xFFFF7D9E), Icons.cake_rounded),
@@ -741,58 +736,65 @@ class _DueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < dues.length; i++) ...[
+            if (i > 0)
+              Divider(
+                  height: 1,
+                  indent: 66,
+                  endIndent: 14,
+                  color: cs.outlineVariant.withValues(alpha: 0.7)),
+            _dueRow(context, dues[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _dueRow(BuildContext context, DueItem due) {
+    final cs = Theme.of(context).colorScheme;
     final (kindColor, icon) =
         _kindMeta[due.kind] ?? (cs.primary, Icons.schedule_rounded);
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    kindColor.withValues(alpha: 0.16),
-                    kindColor.withValues(alpha: 0.32)
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, size: 21, color: kindColor),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: kindColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(13),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(due.title, style: AppTheme.cardTitle(cs.onSurface)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${due.date.month}月${due.date.day}日 到期',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurfaceVariant,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+            child: Icon(icon, size: 19, color: kindColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(due.title, style: AppTheme.cardTitle(cs.onSurface)),
+                const SizedBox(height: 1),
+                Text(
+                  '${due.date.month}月${due.date.day}日 到期',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurfaceVariant,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            DueBadge(daysLeft: due.daysLeft, tone: kindColor),
-          ],
-        ),
+          ),
+          DueBadge(daysLeft: due.daysLeft, tone: kindColor),
+        ],
       ),
     );
   }
@@ -889,14 +891,13 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            cs.primary.withValues(alpha: 0.10),
+            cs.primary.withValues(alpha: 0.07),
             cs.surface,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        boxShadow: AppTheme.softShadow(const Color(0x0A3D2E26)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,15 +905,15 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
           Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                       colors: AppTheme.primaryGradient),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.auto_awesome_rounded,
-                    size: 18, color: Colors.white),
+                    size: 16, color: Colors.white),
               ),
               const SizedBox(width: 10),
               Expanded(

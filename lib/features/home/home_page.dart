@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +9,6 @@ import '../../app/image_store.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/ai/ai_client.dart';
-import '../../domain/models/enums.dart';
 import '../../domain/models/health_record.dart';
 import '../../domain/models/moment.dart';
 import '../../domain/models/pet.dart';
@@ -69,20 +67,11 @@ class HomePage extends ConsumerWidget {
       ..sort((a, b) => b.date.compareTo(a.date));
     final dues = buildDueItems(pet, records);
     final weight = HealthCalculator.latestWeight(records);
-    final weights = records
-        .where((r) => r.type == HealthRecordType.weight && r.value != null)
-        .toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
     final bcs = HealthCalculator.latestBcs(records);
     final weightChange = HealthCalculator.weightChange(records, 30);
     final nextDue = dues.isEmpty
         ? null
         : dues.reduce((a, b) => a.daysLeft <= b.daysLeft ? a : b);
-    // 场景卡背景 sparkline 的坐标点。
-    final spark = [
-      for (final r in weights)
-        FlSpot(r.date.millisecondsSinceEpoch.toDouble(), r.value!),
-    ];
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -118,9 +107,9 @@ class HomePage extends ConsumerWidget {
               child: _Greeting(pet: pet),
             ),
             const SizedBox(height: 10),
-            // 渐变场景卡：数据主视觉。
+            // 场景卡：宠物照片底图 + 数据主视觉。
             _SceneCard(
-              spark: spark,
+              pet: pet,
               weight: weight?.value,
               weightDelta: weightChange?.$1,
               bcs: bcs?.value?.toInt(),
@@ -357,18 +346,18 @@ class _Greeting extends StatelessWidget {
   }
 }
 
-/// 渐变场景卡：大数字体重 + 背景 sparkline + 体型/到期次级信息 +
-/// 快捷记录（与健康页 _WellnessCard 同一视觉语言）。
+/// 场景卡：宠物照片作底图（无照片时回退陶土渐变）+ 暗纱保证可读，
+/// 大数字体重 + 体型/下次到期次级信息 + 快捷记录三连。
 class _SceneCard extends StatelessWidget {
   const _SceneCard({
-    required this.spark,
+    required this.pet,
     this.weight,
     this.weightDelta,
     this.bcs,
     this.nextDue,
   });
 
-  final List<FlSpot> spark;
+  final Pet pet;
   final double? weight;
   final double? weightDelta;
   final int? bcs;
@@ -378,29 +367,57 @@ class _SceneCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final onCard = Colors.white.withValues(alpha: 0.95);
-    final onCardFaint = Colors.white.withValues(alpha: 0.55);
+    final onCardFaint = Colors.white.withValues(alpha: 0.6);
+    final hasAvatar =
+        pet.avatarPath != null && ImageStore.exists(pet.avatarPath!);
+    final fallback = LinearGradient(
+      colors:
+          dark ? AppTheme.sceneGradientDark : AppTheme.sceneGradientLight,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 244),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: dark
-                ? AppTheme.sceneGradientDark
-                : AppTheme.sceneGradientLight,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: hasAvatar ? null : fallback,
           borderRadius: BorderRadius.circular(24),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Stack(
+            fit: StackFit.passthrough,
             children: [
-              if (spark.length >= 2)
-                Positioned.fill(child: SparklineBg(spots: spark)),
+              // 底图：宠物照片 + 暗纱。
+              if (hasAvatar)
+                Positioned.fill(
+                  child: Image.file(
+                    File(pet.avatarPath!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              if (hasAvatar)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withValues(alpha: 0.38),
+                          Colors.black.withValues(alpha: 0.12),
+                          Colors.black.withValues(alpha: 0.55),
+                        ],
+                        stops: const [0, 0.42, 1],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -426,7 +443,7 @@ class _SceneCard extends StatelessWidget {
                                       ? '—'
                                       : weight!.toStringAsFixed(1),
                                   style: TextStyle(
-                                    fontSize: 46,
+                                    fontSize: 44,
                                     fontWeight: FontWeight.w300,
                                     letterSpacing: -1.5,
                                     height: 1.05,
@@ -475,11 +492,12 @@ class _SceneCard extends StatelessWidget {
                     // 发丝分隔线。
                     Container(
                       height: 1,
-                      color: Colors.white.withValues(alpha: 0.18),
+                      color: Colors.white.withValues(alpha: 0.22),
                     ),
                     const SizedBox(height: 12),
-                    // 体型 + 下次到期。
+                    // 体型 + 下次到期（各占半宽，到期文案不再截断）。
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: GestureDetector(
@@ -498,7 +516,7 @@ class _SceneCard extends StatelessWidget {
                                 Text(
                                   bcs == null ? '未评估' : '${bcs!}/9',
                                   style: TextStyle(
-                                    fontSize: 20,
+                                    fontSize: 19,
                                     fontWeight: FontWeight.w400,
                                     color: onCard,
                                     fontFeatures: const [
@@ -512,11 +530,12 @@ class _SceneCard extends StatelessWidget {
                         ),
                         Container(
                           width: 1,
-                          height: 30,
+                          height: 34,
                           margin: const EdgeInsets.symmetric(horizontal: 14),
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: Colors.white.withValues(alpha: 0.18),
                         ),
                         Expanded(
+                          flex: 2,
                           child: GestureDetector(
                             onTap: () => context.go('/health'),
                             behavior: HitTestBehavior.opaque,
@@ -528,11 +547,11 @@ class _SceneCard extends StatelessWidget {
                                         fontSize: 10,
                                         letterSpacing: 1.5,
                                         color: onCardFaint)),
-                                const SizedBox(height: 3),
+                                const SizedBox(height: 4),
                                 Text(
                                   nextDue == null
                                       ? '近期无'
-                                      : '${nextDue!.title} · ${nextDue!.daysLeft < 0 ? '已过' : '${nextDue!.daysLeft}天'}',
+                                      : '${nextDue!.title} · ${nextDue!.daysLeft < 0 ? '已过期' : '${nextDue!.daysLeft}天后'}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -545,37 +564,57 @@ class _SceneCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // 记时刻主按钮。
-                        GestureDetector(
-                          onTap: () => context.push('/moment/new'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 9),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.25)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.photo_camera_outlined,
-                                    size: 14, color: onCard),
-                                const SizedBox(width: 4),
-                                Text('记时刻',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: onCard)),
-                              ],
-                            ),
-                          ),
-                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    // 快捷记录三连。
+                    Row(
+                      children: [
+                        _cardChip(context, Icons.monitor_weight_outlined,
+                            '记体重', () => context.push('/health/record/new',
+                                extra: 'weight')),
+                        const SizedBox(width: 8),
+                        _cardChip(context, Icons.vaccines_outlined, '记疫苗',
+                            () => context.push('/health/record/new',
+                                extra: 'vaccine')),
+                        const SizedBox(width: 8),
+                        _cardChip(context, Icons.photo_camera_outlined, '记时刻',
+                            () => context.push('/moment/new')),
                       ],
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cardChip(
+      BuildContext context, IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 34,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.9)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.92),
                 ),
               ),
             ],

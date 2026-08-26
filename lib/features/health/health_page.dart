@@ -133,30 +133,27 @@ class _HealthPageState extends ConsumerState<HealthPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
               children: [
-                // ---- 沉浸式健康大卡 ----
-                _WellnessCard(
-                  weights: weights,
+                // ---- 顶部数据区：大数字直接落在画布上 ----
+                _DataHeader(
                   latestWeight: latestWeight?.value,
                   weightChange: weightChange?.$1,
-                  latestBcs: latestBcs?.value,
-                  bcsBandText: latestBcs == null
-                      ? null
-                      : bcsBand(latestBcs.value!.toInt()),
+                  bcs: latestBcs?.value?.toInt(),
+                  bcsBandText:
+                      latestBcs == null ? null : bcsBand(latestBcs.value!.toInt()),
                   bcsTrend: bcsTrend,
-                  onWeightTap: () => context.push('/health/record/new',
-                      extra: HealthRecordType.weight.name),
+                  recordCount: sorted.length,
                   onBcsTap: () => context.push(
                       '/health/record/new',
                       extra: HealthRecordType.bcs.name),
+                  onAddTap: () => context.push('/health/record/new'),
                 ),
-                const SizedBox(height: 14),
 
-                // ---- 趋势图（不足 2 条体重时给常驻引导入口）----
+                // ---- 趋势图（融入页面，无卡片盒）（不足 2 条体重时常驻引导）----
                 if (weights.length >= 2)
                   _TrendChart(weights: weights, bcsRecords: bcsRecords)
                 else
                   _ChartTeaser(weightCount: weights.length),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
                 // ---- 疫苗与驱虫 ----
                 if (hasCycleRecords) ...[
@@ -242,233 +239,162 @@ class _HealthPageState extends ConsumerState<HealthPage> {
 }
 
 // ============================================================
-// 沉浸式健康大卡：渐变场景 + 大数字 + 背景 sparkline
+// 顶部数据区：大数字直接落在画布上（与首页照片场景卡形成差异）
 // ============================================================
 
-class _WellnessCard extends StatelessWidget {
-  const _WellnessCard({
-    required this.weights,
-    this.latestWeight,
-    this.weightChange,
-    this.latestBcs,
-    this.bcsBandText,
-    this.bcsTrend,
-    this.onWeightTap,
+class _DataHeader extends StatelessWidget {
+  const _DataHeader({
+    required this.latestWeight,
+    required this.weightChange,
+    required this.bcs,
+    required this.bcsBandText,
+    required this.bcsTrend,
+    required this.recordCount,
     this.onBcsTap,
+    this.onAddTap,
   });
 
-  final List<HealthRecord> weights;
   final double? latestWeight;
   final double? weightChange;
-  final double? latestBcs;
+  final int? bcs;
   final String? bcsBandText;
   final (String, Color?)? bcsTrend;
-  final VoidCallback? onWeightTap;
+  final int recordCount;
   final VoidCallback? onBcsTap;
+  final VoidCallback? onAddTap;
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // 场景卡渐变（与首页同语言）。
-    final gradient = LinearGradient(
-      colors:
-          dark ? AppTheme.sceneGradientDark : AppTheme.sceneGradientLight,
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-    final onCard = Colors.white.withValues(alpha: 0.95);
-    final onCardFaint = Colors.white.withValues(alpha: 0.55);
+    final ink = dark ? Colors.white : AppTheme.ink;
+    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
+    final inkTer = dark ? Colors.white30 : AppTheme.inkTertiary;
+    final deltaColor = weightChange == null || weightChange == 0
+        ? inkSec
+        : weightChange! > 0
+            ? AppTheme.warnRed
+            : AppTheme.okGreen;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // 背景折线纹理：隐约的体重走势，不与前景争抢。
-            if (weights.length >= 2)
-              Positioned.fill(
-                child: SparklineBg(spots: [
-                  for (final r in weights)
-                    FlSpot(
-                        r.date.millisecondsSinceEpoch.toDouble(), r.value!),
-                ]),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 体重大数字（点击记体重）。
-                  GestureDetector(
-                    onTap: onWeightTap,
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // 体重大数字 + 30 天变化。
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('当前体重',
+                        style: TextStyle(
+                            fontSize: 11, letterSpacing: 2, color: inkTer)),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              latestWeight == null
-                                  ? '—'
-                                  : latestWeight!.toStringAsFixed(1),
-                              style: TextStyle(
-                                fontSize: 52,
+                        Text(
+                          latestWeight == null
+                              ? '—'
+                              : latestWeight!.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w300,
+                            letterSpacing: -1.2,
+                            height: 1.05,
+                            color: ink,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text('kg',
+                            style: TextStyle(
+                                fontSize: 15,
                                 fontWeight: FontWeight.w300,
-                                letterSpacing: -1.5,
-                                height: 1.05,
-                                color: onCard,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
-                              ),
+                                color: inkSec)),
+                        if (weightChange != null && weightChange != 0) ...[
+                          const SizedBox(width: 10),
+                          Text(
+                            '30天 ${weightChange! >= 0 ? "+" : ""}${weightChange!.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: deltaColor,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
                             ),
-                            const SizedBox(width: 5),
-                            Text('kg',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w300,
-                                    color: onCardFaint)),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Text('当前体重',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    letterSpacing: 2,
-                                    color: onCardFaint)),
-                            // 30 天变化胶囊。
-                            if (weightChange != null &&
-                                weightChange != 0) ...[
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.16),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '30天 ${weightChange! >= 0 ? "+" : ""}${weightChange!.toStringAsFixed(2)}kg',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: onCard,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
                     ),
+                  ],
+                ),
+              ),
+              // 记一笔。
+              GestureDetector(
+                onTap: onAddTap,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.green.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 18),
-                  // 发丝分隔线。
-                  Container(
-                    height: 1,
-                    color: Colors.white.withValues(alpha: 0.18),
-                  ),
-                  const SizedBox(height: 14),
-                  // 体型（点击记体型） + 记录按钮。
-                  Row(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: onBcsTap,
-                          behavior: HitTestBehavior.opaque,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('体型 BCS',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      letterSpacing: 1.5,
-                                      color: onCardFaint)),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Text(
-                                    latestBcs == null
-                                        ? '未评估'
-                                        : '${latestBcs!.toInt()}/9',
-                                    style: TextStyle(
-                                      fontSize: 21,
-                                      fontWeight: FontWeight.w400,
-                                      color: onCard,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures()
-                                      ],
-                                    ),
-                                  ),
-                                  if (bcsTrend != null) ...[
-                                    const SizedBox(width: 7),
-                                    Text(
-                                      bcsTrend!.$1,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: bcsTrend!.$2 == null
-                                            ? onCardFaint
-                                            : Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                  if (bcsBandText != null) ...[
-                                    const SizedBox(width: 6),
-                                    Text(bcsBandText!,
-                                        style: TextStyle(
-                                            fontSize: 11, color: onCardFaint)),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // 记一笔按钮。
-                      GestureDetector(
-                        onTap: () => context.push('/health/record/new'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15, vertical: 9),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add_rounded, size: 14, color: onCard),
-                              const SizedBox(width: 3),
-                              Text('记一笔',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: onCard)),
-                            ],
-                          ),
-                        ),
-                      ),
+                      Icon(Icons.add_rounded, size: 14, color: AppTheme.green),
+                      const SizedBox(width: 3),
+                      Text('记一笔',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.green)),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 次级信息：体型（可点击记录） + 记录数。
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: onBcsTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      Text('体型 BCS ', style: AppTheme.subhead(inkSec)),
+                      Text(
+                        bcs == null
+                            ? '未评估 · 点击记录'
+                            : '$bcs/9${bcsBandText == null ? '' : ' · $bcsBandText'}',
+                        style: AppTheme.subhead(ink)
+                            .copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      if (bcsTrend != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '较上次${bcsTrend!.$1}',
+                          style: AppTheme.subhead(bcsTrend!.$2 ?? inkSec)
+                              .copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              Text('共 $recordCount 条',
+                  style: AppTheme.captionSm(inkTer)),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -592,16 +518,21 @@ class _TrendChart extends StatelessWidget {
     bool atFraction(double v, double f) =>
         ((v - minY) / range - f).abs() < 0.03;
 
-    return _QuietCard(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final spanDays = lastDate.difference(first).inDays;
+
+    // 无卡片盒：图表直接落在画布上，仅保留底部一条发丝基线。
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 14, 2, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
               children: [
-                Text('体重趋势',
-                    style: AppTheme.label(dark ? Colors.white30 : AppTheme.inkTertiary)),
+                Text('近 $spanDays 天趋势',
+                    style:
+                        AppTheme.label(dark ? Colors.white30 : AppTheme.inkTertiary)),
                 const Spacer(),
                 // 图例。
                 Row(
@@ -634,26 +565,26 @@ class _TrendChart extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 170,
-              child: LineChart(
-                LineChartData(
-                  minX: 0,
-                  maxX: maxX,
-                  minY: minY,
-                  maxY: maxY,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: range / 2,
-                    getDrawingHorizontalLine: (v) => FlLine(
-                      color: (dark ? Colors.white : AppTheme.ink)
-                          .withValues(alpha: 0.05),
-                      strokeWidth: 1,
-                      dashArray: [2, 4],
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                minX: 0,
+                maxX: maxX,
+                minY: minY,
+                maxY: maxY,
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: dark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                      width: 1,
                     ),
                   ),
+                ),
                   titlesData: FlTitlesData(
                     topTitles: const AxisTitles(),
                     rightTitles: AxisTitles(
@@ -847,7 +778,7 @@ class _TrendChart extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
               child: Text(
                 hasBcs
                     ? '右轴为体型分（1-9），绿色 5 分为理想体型；浅色虚线端点为趋势预测'
@@ -857,8 +788,7 @@ class _TrendChart extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _bcsTitle(String text, Color color, {bool highlight = false}) =>
@@ -872,7 +802,7 @@ class _TrendChart extends StatelessWidget {
       );
 }
 
-/// 趋势图引导卡：体重记录不足 2 条时常驻显示，保证入口可见。
+/// 趋势图引导：体重记录不足 2 条时的常驻入口（无卡片盒，融入画布）。
 class _ChartTeaser extends StatelessWidget {
   const _ChartTeaser({required this.weightCount});
 
@@ -884,56 +814,37 @@ class _ChartTeaser extends StatelessWidget {
     final text = weightCount == 0
         ? '记录体重后，这里会出现体重×体型趋势图'
         : '已有 1 次体重，再记 1 次即可看到趋势对比';
-    return _QuietCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 0),
+      child: Row(
+        children: [
+          Icon(Icons.show_chart_rounded,
+              size: 16,
+              color: dark ? Colors.white30 : AppTheme.inkTertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+                style: AppTheme.subhead(
+                    dark ? Colors.white38 : AppTheme.inkSecondary)),
+          ),
+          GestureDetector(
+            onTap: () => context.push('/health/record/new',
+                extra: HealthRecordType.weight.name),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
               decoration: BoxDecoration(
-                color: AppTheme.green.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(17),
               ),
-              child: Icon(Icons.show_chart_rounded,
-                  size: 19, color: AppTheme.green),
+              child: Text('记体重',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.green)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('体重趋势',
-                      style: AppTheme.cardTitle(
-                          dark ? Colors.white : AppTheme.ink)),
-                  const SizedBox(height: 2),
-                  Text(text,
-                      style: AppTheme.footnote(
-                          dark ? Colors.white38 : AppTheme.inkSecondary)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => context.push('/health/record/new',
-                  extra: HealthRecordType.weight.name),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.green.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text('记体重',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: dark ? Colors.white70 : AppTheme.green)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

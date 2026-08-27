@@ -207,7 +207,10 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: '删除记录',
-              onPressed: _delete,
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                _delete();
+              },
             ),
         ],
       ),
@@ -391,7 +394,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
             const SizedBox(height: 12),
 
             FormSection(
-              label: '备注与照片（$_imagePaths.length/6）',
+              label: '备注与照片${_imagePaths.isEmpty ? '' : '（${_imagePaths.length}/6）'}',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

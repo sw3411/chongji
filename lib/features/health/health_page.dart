@@ -110,13 +110,13 @@ class _HealthPageState extends ConsumerState<HealthPage> {
         const SyncButton(),
         IconButton(
           icon: Icon(Icons.calendar_month_outlined,
-              color: dark ? Colors.white70 : AppTheme.inkSecondary),
+              color: context.palette.textSecondary),
           tooltip: '日历',
           onPressed: () => context.push('/calendar'),
         ),
         IconButton(
           icon: Icon(Icons.add,
-              color: dark ? Colors.white70 : AppTheme.inkSecondary),
+              color: context.palette.textSecondary),
           tooltip: '添加记录',
           onPressed: () => context.push('/health/record/new'),
         ),
@@ -196,7 +196,7 @@ class _HealthPageState extends ConsumerState<HealthPage> {
                       child: Center(
                         child: Text('该类型还没有记录',
                             style: AppTheme.subhead(
-                                dark ? Colors.white38 : AppTheme.inkTertiary)),
+                                context.palette.textTertiary)),
                       ),
                     ),
                   )
@@ -269,10 +269,10 @@ class _DataHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = dark ? Colors.white : AppTheme.ink;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
-    final inkTer = dark ? Colors.white30 : AppTheme.inkTertiary;
+    final p = context.palette;
+    final ink = p.textPrimary;
+    final inkSec = p.textSecondary;
+    final inkTer = p.textTertiary;
     final deltaColor = weightChange == null || weightChange == 0
         ? inkSec
         : weightChange! > 0
@@ -445,8 +445,9 @@ class _TrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
-    final surface = dark ? AppTheme.darkSurface : Colors.white;
+    final p = context.palette;
+    final inkSec = p.textSecondary;
+    final surface = p.surface;
     final weightColor = AppTheme.green;
 
     final first = weights.first.date;
@@ -576,7 +577,7 @@ class _TrendChart extends StatelessWidget {
                             TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: dark ? Colors.white : AppTheme.ink,
+                              color: context.palette.textPrimary,
                               fontFeatures: const [
                                 FontFeature.tabularFigures()
                               ],
@@ -630,7 +631,6 @@ class _ChartTeaser extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final text = weightCount == 0
         ? '记录体重后，这里会出现体重趋势图 📈'
         : '已有 1 次体重，再记 1 次即可看到趋势对比 🐾';
@@ -640,28 +640,29 @@ class _ChartTeaser extends StatelessWidget {
         children: [
           Icon(Icons.show_chart_rounded,
               size: 16,
-              color: dark ? Colors.white30 : AppTheme.inkTertiary),
+              color: context.palette.textTertiary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text,
                 style: AppTheme.subhead(
-                    dark ? Colors.white38 : AppTheme.inkSecondary)),
+                    context.palette.textSecondary)),
           ),
-          GestureDetector(
+          InkWell(
             onTap: () => context.push('/health/record/new',
                 extra: HealthRecordType.weight.name),
+            borderRadius: BorderRadius.circular(17),
             child: Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
               decoration: BoxDecoration(
-                color: AppTheme.green.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
+                color: context.palette.accentSoft,
+                borderRadius: BorderRadius.circular(17),
               ),
               child: Text('记体重',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.green)),
+                      color: context.palette.accentText)),
             ),
           ),
         ],
@@ -716,8 +717,7 @@ class _DueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
+    final inkSec = context.palette.textSecondary;
     final due = HealthCalculator.nextDue(records, type);
     final latest = records
         .where((r) => r.type == type)
@@ -751,7 +751,7 @@ class _DueRow extends StatelessWidget {
               children: [
                 Text(type.label,
                     style: AppTheme.cardTitle(
-                        dark ? Colors.white : AppTheme.ink)),
+                        context.palette.textPrimary)),
                 const SizedBox(height: 2),
                 Text(
                   latest == null
@@ -786,7 +786,7 @@ class _DueRow extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: dark ? Colors.white70 : AppTheme.green)),
+                            color: context.palette.accentText)),
                   )
                 : DueBadge(daysLeft: days),
           ),
@@ -813,7 +813,7 @@ class _RecordRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final ink = dark ? Colors.white : AppTheme.ink;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
+    final inkSec = context.palette.textSecondary;
     final color = recordTypeColor(record.type);
     Widget? subtitle;
     if (record.type == HealthRecordType.weight) {
@@ -924,8 +924,7 @@ class _DeltaText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
+    final inkSec = context.palette.textSecondary;
     final cur = current;
     final prev = previous;
     if (cur == null) return const SizedBox.shrink();
@@ -1003,9 +1002,7 @@ class _TypeChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? base.withValues(alpha: 0.11)
-                : (dark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.white),
+                : context.palette.surfaceAlt,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
@@ -1015,7 +1012,7 @@ class _TypeChip extends StatelessWidget {
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               color: selected
                   ? base
-                  : (dark ? Colors.white38 : AppTheme.inkTertiary),
+                  : context.palette.textSecondary,
             ),
           ),
         ),
@@ -1032,7 +1029,6 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
@@ -1041,8 +1037,7 @@ class _SectionLabel extends StatelessWidget {
           fontSize: 11.5,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
-          color: dark ? Colors.white30 : AppTheme.inkTertiary,
-        ),
+          color: context.palette.textTertiary),
       ),
     );
   }

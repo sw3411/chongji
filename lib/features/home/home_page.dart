@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'dart:io' as io;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +28,6 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pets = ref.watch(petsProvider).valueOrNull ?? const <Pet>[];
-    final dark = Theme.of(context).brightness == Brightness.dark;
 
     if (pets.isEmpty) {
       return Scaffold(
@@ -73,13 +75,10 @@ class HomePage extends ConsumerWidget {
     final nextDue = dues.isEmpty
         ? null
         : dues.reduce((a, b) => a.daysLeft <= b.daysLeft ? a : b);
-    final wVal = weight?.value;
-    final wDelta = weightChange?.$1;
-    final bVal = bcs?.value?.toInt();
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/ai/chat'),
-        icon: const Icon(Icons.auto_awesome_rounded),
+        icon: const Icon(PhosphorIconsFill.sparkle),
         label: const Text('AI 助手'),
         tooltip: 'AI 助手',
       ),
@@ -90,163 +89,12 @@ class HomePage extends ConsumerWidget {
           _HeroSection(
             pet: pet,
             pets: pets,
-          ),
-          // 核心信息：体重 / 体型 / 下次到期，白字直接坐深底画布。
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('当前体重',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2.5,
-                        color: dark
-                            ? Colors.white.withValues(alpha: 0.62)
-                            : AppTheme.inkSecondary)),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      wVal == null ? '—' : wVal.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -2,
-                        height: 1.05,
-                        color: dark ? Colors.white : AppTheme.ink,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text('kg',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            color: dark
-                                ? Colors.white.withValues(alpha: 0.72)
-                                : AppTheme.inkSecondary)),
-                    const Spacer(),
-                    if (wDelta != null && wDelta != 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 11, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: dark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : AppTheme.ink.withValues(alpha: 0.07),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '30天 ${wDelta >= 0 ? "+" : ""}${wDelta.toStringAsFixed(2)}kg',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: dark
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : AppTheme.ink,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures()
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Container(
-                    height: 1,
-                    color: dark
-                        ? Colors.white.withValues(alpha: 0.10)
-                        : AppTheme.lightDivider),
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => context.push('/health/record/new',
-                            extra: 'bcs'),
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('体型 BCS',
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.5,
-                                    color: dark
-                                        ? Colors.white
-                                            .withValues(alpha: 0.58)
-                                        : AppTheme.inkTertiary)),
-                            const SizedBox(height: 6),
-                            Text(
-                              bVal == null ? '未评估' : '$bVal/9',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w300,
-                                color: dark ? Colors.white : AppTheme.ink,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 42,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      color: dark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : AppTheme.lightDivider,
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: GestureDetector(
-                        onTap: () => context.go('/health'),
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('下次到期',
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.5,
-                                    color: dark
-                                        ? Colors.white
-                                            .withValues(alpha: 0.58)
-                                        : AppTheme.inkTertiary)),
-                            const SizedBox(height: 6),
-                            Text(
-                              nextDue == null
-                                  ? '近期无'
-                                  : '${nextDue.title} · ${nextDue.daysLeft < 0 ? '已过期' : '${nextDue.daysLeft}天后'}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w300,
-                                color: dark
-                                    ? Colors.white.withValues(alpha: 0.92)
-                                    : AppTheme.ink,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            images: ref.watch(heroCarouselProvider)[pet.id] ??
+                const <String>[],
+            weight: weight?.value,
+            weightDelta: weightChange?.$1,
+            bcs: bcs?.value?.toInt(),
+            nextDue: nextDue,
           ),
           // 近期关注（AI 判断）。
           Padding(
@@ -263,7 +111,7 @@ class HomePage extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text('全部',
-                            style: AppTheme.footnote(Colors.white54)),
+                            style: AppTheme.footnote(context.palette.textSecondary)),
                       ),
                     ),
               child: dues.isEmpty
@@ -282,7 +130,7 @@ class HomePage extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Text('全部',
-                        style: AppTheme.footnote(Colors.white54)),
+                        style: AppTheme.footnote(context.palette.textSecondary)),
                   ),
                 ),
                 child: SizedBox(
@@ -310,10 +158,22 @@ class _HeroSection extends StatefulWidget {
   const _HeroSection({
     required this.pet,
     required this.pets,
+    required this.images,
+    this.weight,
+    this.weightDelta,
+    this.bcs,
+    this.nextDue,
   });
 
   final Pet pet;
   final List<Pet> pets;
+
+  /// 当前宠物的首页轮播图（全部页）。
+  final List<String> images;
+  final double? weight;
+  final double? weightDelta;
+  final int? bcs;
+  final DueItem? nextDue;
 
   @override
   State<_HeroSection> createState() => _HeroSectionState();
@@ -324,10 +184,63 @@ class _HeroSectionState extends State<_HeroSection> {
   static final _aspectCache = <String, double>{};
   double? _aspect;
 
+  // ---- 轮播：5 秒自动切换，可手动滑动，页数>1 才启用 ----
+  static const _carouselInterval = Duration(seconds: 8);
+  PageController? _pageController;
+  Timer? _timer;
+  int _page = 0;
+
+  // 轮播只用用户添加的图；一张都没有时回退头像单张。
+  int get _pageCount =>
+      widget.images.isNotEmpty ? widget.images.length : (widget.pet.avatarPath != null ? 1 : 0);
+  bool get _carouselActive => _pageCount > 1;
+
+  void _ensureCarousel(int pageCount) {
+    if (pageCount > 1 && _pageController == null) {
+      _pageController = PageController();
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (!_carouselActive) return;
+    _timer = Timer.periodic(_carouselInterval, (_) {
+      if (!mounted || _pageController == null || !_pageController!.hasClients) {
+        return;
+      }
+      final next = (_page + 1) % _pageCount;
+      // 到末尾回第一张：直接跳回，避免长距离倒滚。
+      if (next == 0) {
+        _pageController!.jumpToPage(0);
+        setState(() => _page = 0);
+      } else {
+        _pageController!
+            .animateToPage(next,
+                duration: const Duration(milliseconds: 450),
+                curve: Curves.easeOutCubic)
+            .whenComplete(() {
+          if (mounted) setState(() => _page = next);
+        });
+      }
+    });
+  }
+
+  void _onPageChanged(int i) {
+    setState(() => _page = i);
+    _startTimer();
+  }
+
   @override
   void initState() {
     super.initState();
     _loadAspect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _ensureCarousel(_pageCount);
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -337,6 +250,25 @@ class _HeroSectionState extends State<_HeroSection> {
       _aspect = null;
       _loadAspect();
     }
+    if (old.pet.id != widget.pet.id) {
+      _page = 0;
+      _pageController?.jumpToPage(0);
+    }
+    _ensureCarousel(_pageCount);
+    if (!_carouselActive && _timer != null) {
+      _timer?.cancel();
+      _timer = null;
+      _pageController?.dispose();
+      _pageController = null;
+      _page = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAspect() async {
@@ -379,30 +311,279 @@ class _HeroSectionState extends State<_HeroSection> {
     );
 
     // 照片自然高度：宽 × 高宽比（完整显示，极长竖图才封顶）；未解码前先估值。
+    // 照片区高度：以目标线为基准（有轮播 70% 屏高、仅头像 62%），
+    // 头像自然比例能到多高就到多高；不足则至少抬到目标线 92%，
+    // 保证区域足够高、轮播图少裁切。
+    final targetH =
+        screenH * (widget.images.isNotEmpty ? 0.70 : 0.62);
     final photoH = hasAvatar && _aspect != null
-        ? (screenW * _aspect!).clamp(120.0, screenH * 0.62)
-        : screenH * 0.42;
+        ? (screenW * _aspect!).clamp(targetH * 0.92, screenH * 0.85)
+        : targetH;
     return SizedBox(
       height: photoH,
       child: Stack(
         children: [
-          // ---- 清晰照片：完整显示，fitWidth 顶部对齐（绝不放大）----
+          // ---- 照片轮播：第一张=头像（fitWidth 完整显示），其后为用户
+          //      在设置里添加的轮播图（同高度 cover 顶部对齐，高度不跳）。
+          //      手动可滑动；多于一张时每 5 秒自动切换。----
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: photoH,
-            child: hasAvatar
-                ? Image.file(
-                    io.File(pet.avatarPath!),
-                    fit: BoxFit.fitWidth,
-                    errorBuilder: (_, __, ___) => DecoratedBox(
-                      decoration: BoxDecoration(gradient: fallback),
-                    ),
+            child: _pageCount > 1 || widget.images.isNotEmpty
+                ? PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pageCount,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, i) {
+                      final path = widget.images.isNotEmpty
+                          ? widget.images[i]
+                          : widget.pet.avatarPath!;
+                      // 毛玻璃底铺满（重度模糊的同图 cover），
+                      // 原图居中且向上下边缘渐隐——边缘毛玻璃慢慢加重，
+                      // 中心保持清晰，无硬边界。
+                      return ClipRect(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ImageFiltered(
+                              imageFilter: ImageFilter.blur(
+                                  sigmaX: 26,
+                                  sigmaY: 26,
+                                  tileMode: TileMode.clamp),
+                              child: Image.file(
+                                io.File(path),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
+                            ShaderMask(
+                              blendMode: BlendMode.dstIn,
+                              shaderCallback: (rect) {
+                                return LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: const [
+                                    Colors.transparent,
+                                    Colors.black,
+                                    Colors.black,
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0, 0.26, 0.74, 1],
+                                ).createShader(rect);
+                              },
+                              child: Center(
+                                child: Image.file(
+                                  io.File(path),
+                                  fit: BoxFit.fitWidth,
+                                  errorBuilder: (_, __, ___) => DecoratedBox(
+                                    decoration:
+                                        BoxDecoration(gradient: fallback),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   )
-                : DecoratedBox(
-                    decoration: BoxDecoration(gradient: fallback)),
+                : hasAvatar
+                    ? Align(
+                        alignment: Alignment.topCenter,
+                        child: Image.file(
+                          io.File(pet.avatarPath!),
+                          fit: BoxFit.fitWidth,
+                          errorBuilder: (_, __, ___) => DecoratedBox(
+                            decoration: BoxDecoration(gradient: fallback),
+                          ),
+                        ),
+                      )
+                    : DecoratedBox(
+                        decoration: BoxDecoration(gradient: fallback)),
           ),
+          // ---- 整体压暗：降低图片亮度与曝光，突出白字信息 ----
+          Positioned.fill(
+            child: const IgnorePointer(
+              child: ColoredBox(color: Color(0x1A000000)),
+            ),
+          ),
+          // ---- 底部暗纱：核心信息白字可读 ----
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 260,
+            child: const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0x00000000),
+                      Color(0x2E000000),
+                      Color(0x87000000),
+                    ],
+                    stops: [0, 0.5, 1],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // ---- 轮播指示器：图片最右下角 ----
+          if (_carouselActive)
+            Positioned(
+              right: 20,
+              bottom: 4,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var d = 0; d < _pageCount; d++) ...[
+                    if (d > 0) const SizedBox(width: 3),
+                    AnimatedContainer(
+                      duration: Motion.fast,
+                      curve: Motion.curve,
+                      width: d == _page ? 5 : 3.2,
+                      height: d == _page ? 5 : 3.2,
+                      decoration: BoxDecoration(
+                        color: d == _page
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.45),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          // ---- 核心信息：白字坐照片底部（与照片底缘留 14px）----
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Spacer(),
+                    Text('当前体重',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 2.5,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      widget.weight == null
+                          ? '—'
+                          : widget.weight!.toStringAsFixed(1),
+                      style: AppTheme.displayNumber(Colors.white),
+                    ),
+                    const SizedBox(width: 6),
+                    Text('kg',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withValues(alpha: 0.78),
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.22)),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 体型 BCS：左半，内部居中
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => context
+                            .push('/health/record/new', extra: 'bcs'),
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text('体型 BCS',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.5,
+                                  color: Colors.white.withValues(alpha: 0.72),
+                                )),
+                            const SizedBox(height: 5),
+                            Text(
+                              widget.bcs == null
+                                  ? '未评估'
+                                  : '${widget.bcs!}/9',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w300,
+                                color: Colors.white,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 42,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: Colors.white.withValues(alpha: 0.22),
+                    ),
+                    // 下次到期：右半，内部居中（与左半等宽）
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => context.go('/health'),
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text('下次到期',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.5,
+                                  color: Colors.white.withValues(alpha: 0.72),
+                                )),
+                            const SizedBox(height: 5),
+                            Text(
+                              widget.nextDue == null
+                                  ? '近期无'
+                                  : '${widget.nextDue!.title.replaceAll('到期', '')} · ${widget.nextDue!.daysLeft < 0 ? '已过期' : '${widget.nextDue!.daysLeft}天后'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w300,
+                                color: Colors.white.withValues(alpha: 0.95),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
           // ---- 暗纱：顶部连续渐变（顶栏/问候可读）----
           Positioned(
             top: 0,
@@ -426,7 +607,7 @@ class _HeroSectionState extends State<_HeroSection> {
               ),
             ),
           ),
-          // ---- 内容：身份 + 问候（上）/ 大留白 ----
+          // ---- 内容：身份 + 问候（名字右侧接时段问候，同一行同字号）----
           Positioned.fill(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +635,6 @@ class _HeroSectionState extends State<_HeroSection> {
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -590,51 +770,29 @@ class _Greeting extends StatelessWidget {
   final Pet pet;
   final bool onPhoto;
 
+  /// 时段问候（拼进日期行开头）。
+  static String helloNow() {
+    final h = DateTime.now().hour;
+    return switch (h) {
+      < 6 => '夜深了',
+      < 11 => '早上好',
+      < 14 => '中午好',
+      < 18 => '下午好',
+      _ => '晚上好',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final mainColor = onPhoto
-        ? Colors.white
-        : (dark ? Colors.white : AppTheme.ink);
     final subColor = onPhoto
         ? Colors.white70
-        : (dark ? Colors.white38 : AppTheme.inkSecondary);
-    final hour = DateTime.now().hour;
-    final hello = hour < 6
-        ? '夜深了'
-        : hour < 11
-            ? '早上好'
-            : hour < 14
-                ? '中午好'
-                : hour < 18
-                    ? '下午好'
-                    : '晚上好';
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     final now = DateTime.now();
     const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
-    final species = switch (pet.speciesLabel) {
-      '狗' => '狗狗',
-      '猫' => '猫咪',
-      _ => pet.speciesLabel,
-    };
-    final speciesEmoji = switch (pet.speciesLabel) {
-      '狗' => ' 🐶',
-      '猫' => ' 🐱',
-      _ => ' 🐾',
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          hello,
-          style: AppTheme.largeTitle(mainColor, size: 19),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${now.month}月${now.day}日 周${weekdays[now.weekday - 1]} · '
-          '${HealthCalculator.ageText(pet.birthday)}的$species$speciesEmoji',
-          style: AppTheme.subhead(subColor),
-        ),
-      ],
+    return Text(
+      '${helloNow()}呀，今天是${now.month}月${now.day}日 星期${weekdays[now.weekday - 1]}，'
+      '我们的${pet.name} ${HealthCalculator.ageText(pet.birthday)}啦',
+      style: AppTheme.subhead(subColor),
     );
   }
 }
@@ -649,7 +807,6 @@ class _HomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(top: 22),
       child: Column(
@@ -663,7 +820,7 @@ class _HomeSection extends StatelessWidget {
                   child: Text(
                       title,
                       style: AppTheme.cardTitle(
-                          dark ? Colors.white : AppTheme.ink)),
+                          context.palette.textPrimary)),
                 ),
                 if (trailing != null) trailing!,
               ],
@@ -689,25 +846,24 @@ class _MiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: 0.04) : AppTheme.lightSurface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: Row(
         children: [
           Icon(icon,
               size: 17,
-              color: dark ? Colors.white54 : AppTheme.inkSecondary),
+              color: context.palette.textSecondary),
           const SizedBox(width: 10),
           Expanded(
               child: Text(
                   text,
                   style: AppTheme.subhead(
-                      dark ? Colors.white60 : AppTheme.ink))),
+                      context.palette.textPrimary))),
         ],
       ),
     );
@@ -722,12 +878,12 @@ class _MomentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final color = momentTypeColor(moment.type);
     final hasPhoto = moment.imagePaths.isNotEmpty &&
         ImageStore.exists(moment.imagePaths.first);
-    return GestureDetector(
+    return InkWell(
       onTap: () => context.push('/moment/${moment.id}/detail'),
+      borderRadius: BorderRadius.circular(AppTheme.cardRadius - 4),
       child: SizedBox(
         width: 118,
         child: Column(
@@ -758,14 +914,14 @@ class _MomentCard extends StatelessWidget {
                     moment.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTheme.footnote(dark ? Colors.white : AppTheme.ink)
+                    style: AppTheme.footnote(context.palette.textPrimary)
                         .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${moment.date.month}/${moment.date.day} · ${moment.type.label}',
-                    style: AppTheme.captionSm(
-                        dark ? Colors.white38 : AppTheme.inkSecondary),
+                    style:
+                        AppTheme.captionSm(context.palette.textSecondary),
                   ),
                 ],
               ),
@@ -788,22 +944,21 @@ class _DueGroup extends StatelessWidget {
 
   final List<DueItem> dues;
 
-  static const _kindEmoji = <String, String>{
-    'birthday': '🎂',
-    'adoption': '🏠',
-    'vaccine': '💉',
-    'dewormIn': '🛡️',
-    'dewormOut': '🛡️',
-    'weight': '⚖️',
-    'bcs': '🐾',
+  static const _kindIcon = <String, IconData>{
+    'birthday': PhosphorIconsDuotone.cake,
+    'adoption': PhosphorIconsDuotone.houseLine,
+    'vaccine': PhosphorIconsDuotone.syringe,
+    'dewormIn': PhosphorIconsDuotone.shieldCheck,
+    'dewormOut': PhosphorIconsDuotone.shieldCheck,
+    'weight': PhosphorIconsDuotone.barbell,
+    'bcs': PhosphorIconsDuotone.pawPrint,
   };
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: 0.04) : AppTheme.lightSurface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: Column(
@@ -814,7 +969,7 @@ class _DueGroup extends StatelessWidget {
                   height: 1,
                   indent: 60,
                   endIndent: 14,
-                  color: dark ? Colors.white.withValues(alpha: 0.06) : AppTheme.lightDivider),
+                  color: context.palette.divider),
             _dueRow(context, dues[i]),
           ],
         ],
@@ -824,23 +979,20 @@ class _DueGroup extends StatelessWidget {
 
   Widget _dueRow(BuildContext context, DueItem due) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final emoji = _kindEmoji[due.kind] ?? '⏰';
+    final icon = _kindIcon[due.kind] ?? PhosphorIconsDuotone.clock;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : AppTheme.lightDivider,
-              borderRadius: BorderRadius.circular(12),
+              color: context.palette.accentSoft.withValues(alpha: 0.35),
+              shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(emoji,
-                  style: const TextStyle(fontSize: 15, height: 1)),
+              child: Icon(icon, size: 20, color: context.palette.accentText),
             ),
           ),
           const SizedBox(width: 12),
@@ -850,7 +1002,7 @@ class _DueGroup extends StatelessWidget {
               children: [
                 Text(due.title,
                     style: AppTheme.cardTitle(
-                        dark ? Colors.white : AppTheme.ink)),
+                        context.palette.textPrimary)),
                 const SizedBox(height: 1),
                 Text(
                   '${due.date.month}月${due.date.day}日 到期',
@@ -953,8 +1105,7 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final inkSec = dark ? Colors.white38 : AppTheme.inkSecondary;
+    final inkSec = context.palette.textSecondary;
     final aiReady = ref.watch(aiConfigProvider).isReady;
 
     // 无卡片容器：内容直接嵌入画布（与英雄区数据区同语言）。
@@ -1008,20 +1159,21 @@ class _InsightCardState extends ConsumerState<_InsightCard> {
                   child: Text('让 AI 结合近期情况给出判断与建议',
                       style: AppTheme.subhead(inkSec)),
                 ),
-                GestureDetector(
+                InkWell(
                   onTap: _generate,
+                  borderRadius: BorderRadius.circular(18),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 13, vertical: 7),
                     decoration: BoxDecoration(
-                      color: AppTheme.green.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(17),
+                      color: context.palette.accentSoft,
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text('生成',
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.green)),
+                            color: context.palette.accentText)),
                   ),
                 ),
               ],

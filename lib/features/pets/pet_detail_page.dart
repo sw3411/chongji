@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -191,7 +192,10 @@ class PetDetailPage extends ConsumerWidget {
               FilledButton(
                 style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.warnRed),
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () {
+                  HapticFeedback.heavyImpact();
+                  Navigator.pop(context, true);
+                },
                 child: const Text('删除'),
               ),
             ],

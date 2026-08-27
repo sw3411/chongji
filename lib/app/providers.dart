@@ -176,6 +176,62 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
 
 // ---------- 宠物 ----------
 
+// ---------- 首页轮播图 ----------
+
+/// 首页顶部轮播图上限。
+const int kHeroCarouselMax = 30;
+
+/// 首页轮播图存储 key（settings 表单键，内含每宠一份）。
+const String _kHeroCarouselKey = 'heroCarousel';
+
+/// 每宠轮播图：{petId: [图片路径]}；头像始终为首页第一张、不在此列。
+class HeroCarouselNotifier extends StateNotifier<Map<String, List<String>>> {
+  HeroCarouselNotifier(this._repo) : super(const <String, List<String>>{}) {
+    _load();
+  }
+
+  final SettingsRepository _repo;
+
+  Future<void> _load() async {
+    final json = await _repo.getJson(_kHeroCarouselKey);
+    if (json == null || !mounted) return;
+    final pets = (json['pets'] as Map<String, dynamic>?) ?? const {};
+    state = pets.map((k, v) =>
+        MapEntry(k, (v as List).cast<String>()));
+  }
+
+  /// 覆盖某宠的轮播图并持久化。
+  Future<void> setFor(String petId, List<String> paths) async {
+    final next = Map<String, List<String>>.from(state);
+    if (paths.isEmpty) {
+      next.remove(petId);
+    } else {
+      next[petId] = paths.take(kHeroCarouselMax).toList();
+    }
+    state = next;
+    await _repo.setJson(_kHeroCarouselKey,
+        {'pets': next.map((k, v) => MapEntry(k, v))});
+  }
+
+  Future<void> addFor(String petId, List<String> newPaths) async {
+    final merged = [...(state[petId] ?? const <String>[]), ...newPaths]
+        .take(kHeroCarouselMax)
+        .toList();
+    await setFor(petId, merged);
+  }
+
+  Future<void> removeAt(String petId, int index) async {
+    final list = [...(state[petId] ?? const <String>[])];
+    if (index < 0 || index >= list.length) return;
+    list.removeAt(index);
+    await setFor(petId, list);
+  }
+}
+
+final heroCarouselProvider =
+    StateNotifierProvider<HeroCarouselNotifier, Map<String, List<String>>>(
+        (ref) => HeroCarouselNotifier(ref.read(settingsRepoProvider)));
+
 /// 全部宠物（未删除）。
 final petsProvider = StreamProvider<List<Pet>>((ref) {
   return ref.watch(petRepoProvider).watchAll().map(

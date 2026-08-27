@@ -52,7 +52,7 @@ class PageScaffold extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTheme.largeTitle(
-                            dark ? Colors.white : AppTheme.ink,
+                            context.palette.textPrimary,
                             size: 19),
                       ),
                     ),
@@ -90,7 +90,7 @@ class FormSaveBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: dark ? Colors.white.withValues(alpha: 0.05) : AppTheme.lightSurface,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           border: dark
               ? Border.all(color: Colors.white.withValues(alpha: 0.06))
@@ -290,19 +290,23 @@ class SelectChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
     final base = color ?? Theme.of(context).colorScheme.primary;
-    final fg = selected ? base : (dark ? Colors.white70 : AppTheme.ink);
-    return GestureDetector(
+    final fg = selected ? base : p.textPrimary;
+    return InkWell(
       onTap: onSelected == null ? null : () => onSelected!(true),
+      borderRadius: BorderRadius.circular(AppTheme.cardRadius - 4),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: Motion.fast,
+        curve: Motion.curve,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: selected
               ? base.withValues(alpha: 0.13)
-              : (dark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-          borderRadius: BorderRadius.circular(16),
+              : (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : p.surface),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius - 4),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -345,8 +349,8 @@ class DatePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = color ?? (dark ? Colors.white54 : AppTheme.inkSecondary);
+    final base =
+        color ?? context.palette.textSecondary;
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 7 : 9, vertical: compact ? 2 : 3),

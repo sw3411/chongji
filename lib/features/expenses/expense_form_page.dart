@@ -165,7 +165,10 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: '删除消费',
-              onPressed: _delete,
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                _delete();
+              },
             ),
         ],
       ),
@@ -272,7 +275,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
             ),
             const SizedBox(height: 12),
             FormSection(
-              label: '备注与小票（$_imagePaths.length/3）',
+              label: '备注与小票${_imagePaths.isEmpty ? '' : '（${_imagePaths.length}/3）'}',
               child: Column(
                 children: [
                   TextFormField(

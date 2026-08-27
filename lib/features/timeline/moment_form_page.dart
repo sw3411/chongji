@@ -198,7 +198,10 @@ class _MomentFormPageState extends ConsumerState<MomentFormPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: '删除时刻',
-              onPressed: _delete,
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                _delete();
+              },
             ),
         ],
       ),

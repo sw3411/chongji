@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +18,7 @@ class SettingsPage extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final settings = ref.watch(appSettingsProvider);
     final pets = ref.watch(petsProvider).valueOrNull ?? const <Pet>[];
+    final currentPet = ref.watch(currentPetProvider);
     final aiReady = ref.watch(aiConfigProvider).isReady;
 
     return Scaffold(
@@ -37,6 +39,17 @@ class SettingsPage extends ConsumerWidget {
                         style: AppTheme.footnote(cs.onSurfaceVariant)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push('/pet/${p.id}'),
+                  ),
+                if (currentPet != null)
+                  ListTile(
+                    leading: const Icon(PhosphorIconsDuotone.images),
+                    title: Text('首页轮播图',
+                        style: AppTheme.cardTitle(cs.onSurface)),
+                    subtitle: Text('顶图自动轮播 · 每 8 秒一张',
+                        style: AppTheme.footnote(cs.onSurfaceVariant)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context
+                        .push('/settings/carousel', extra: currentPet),
                   ),
                 ListTile(
                   leading: const Icon(Icons.add),

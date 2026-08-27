@@ -178,8 +178,7 @@ class _MonthHeaderDelegate extends SliverPersistentHeaderDelegate {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 1,
-          color: dark ? Colors.white30 : AppTheme.inkTertiary,
-        ),
+          color: context.palette.textTertiary),
       ),
     );
   }

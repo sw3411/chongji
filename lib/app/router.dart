@@ -15,7 +15,9 @@ import '../features/home/home_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/pets/pet_detail_page.dart';
 import '../features/pets/pet_form_page.dart';
+import '../domain/models/pet.dart';
 import '../features/settings/about_page.dart';
+import '../features/settings/hero_carousel_page.dart';
 import '../features/settings/ai_settings_page.dart';
 import '../features/settings/backup_page.dart';
 import '../features/settings/cloud_page.dart';
@@ -128,6 +130,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/ai',
         builder: (context, state) => const AiSettingsPage(),
+      ),
+      GoRoute(
+        path: '/settings/carousel',
+        builder: (context, state) =>
+            HeroCarouselPage(pet: state.extra! as Pet),
       ),
       GoRoute(
         path: '/settings/backup',

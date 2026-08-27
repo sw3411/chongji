@@ -222,3 +222,35 @@ List<DueItem> buildDueItems(
   items.sort((a, b) => a.daysLeft.abs().compareTo(b.daysLeft.abs()));
   return items;
 }
+
+/// 每日提醒摘要文案（系统通知用）：汇总全部宠物 [windowDays] 天内到期事项。
+/// 返回 (标题, 正文)；无事项时给出安静的一句。now 注入保证可测。
+(String, String) dailyDigestText(
+  Map<Pet, List<HealthRecord>> petRecords, {
+  int windowDays = 7,
+  DateTime? now,
+}) {
+  final n = now ?? DateTime.now();
+  final items = <(String, DueItem)>[];
+  for (final e in petRecords.entries) {
+    if (e.key.isDeleted) continue;
+    for (final d in buildDueItems(e.key, e.value, now: n)) {
+      if (d.daysLeft <= windowDays) items.add((e.key.name, d));
+    }
+  }
+  items.sort((a, b) => a.$2.daysLeft.compareTo(b.$2.daysLeft));
+  if (items.isEmpty) {
+    return ('宠迹 · 今日提醒', '没有到期的事项，一切都在计划中 🐾');
+  }
+  final lines = items.take(4).map((e) {
+    final title = e.$2.title.replaceAll('到期', '');
+    final when = e.$2.daysLeft < 0
+        ? '已过期'
+        : e.$2.daysLeft == 0
+            ? '就在今天'
+            : '还有${e.$2.daysLeft}天';
+    return '${e.$1}·$title $when';
+  });
+  final more = items.length > 4 ? '，共${items.length}项' : '';
+  return ('宠迹 · 今日提醒 ${items.length} 项', '${lines.join('；')}$more');
+}

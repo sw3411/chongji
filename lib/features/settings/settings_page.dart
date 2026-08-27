@@ -120,6 +120,53 @@ class SettingsPage extends ConsumerWidget {
                     if (v && context.mounted) _rescheduleAll(ref);
                   },
                 ),
+                if (settings.reminderEnabled) ...[
+                  SwitchListTile(
+                    secondary: const Icon(PhosphorIconsDuotone.sun),
+                    title: Text('每日提醒摘要',
+                        style: AppTheme.cardTitle(cs.onSurface)),
+                    subtitle: Text(
+                        '每天 ${settings.dailyDigestHour}:00 推送当日到期事项',
+                        style: AppTheme.footnote(cs.onSurfaceVariant)),
+                    value: settings.dailyDigestEnabled,
+                    onChanged: (v) async {
+                      if (v &&
+                          !await NotificationService.isPermissionGranted()) {
+                        final granted =
+                            await NotificationService.requestPermission();
+                        if (!granted) {
+                          if (context.mounted) {
+                            showAutoToast(context, '请在系统设置中允许通知权限');
+                          }
+                          return;
+                        }
+                      }
+                      await ref.read(appSettingsProvider.notifier).update(
+                          settings.copy()..dailyDigestEnabled = v);
+                      await rescheduleDailyDigest(ref.read);
+                    },
+                  ),
+                  if (settings.dailyDigestEnabled)
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      title: Text('推送时间',
+                          style: AppTheme.subhead(cs.onSurface)),
+                      trailing: Text('${settings.dailyDigestHour.toString().padLeft(2, '0')}:00',
+                          style: AppTheme.cardTitle(cs.primary)),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime:
+                              TimeOfDay(hour: settings.dailyDigestHour, minute: 0),
+                        );
+                        if (picked == null) return;
+                        await ref.read(appSettingsProvider.notifier).update(
+                            settings.copy()..dailyDigestHour = picked.hour);
+                        await rescheduleDailyDigest(ref.read);
+                      },
+                    ),
+                ],
                 if (settings.reminderEnabled)
                   ListTile(
                     contentPadding:
@@ -223,6 +270,7 @@ class SettingsPage extends ConsumerWidget {
         daysBefore: settings.reminderDaysBefore,
       );
     }
+    await rescheduleDailyDigest(ref.read);
   }
 }
 

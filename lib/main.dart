@@ -8,6 +8,7 @@ import 'app/providers.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/constants/app_info.dart';
+import 'core/notifications/notification_service.dart';
 import 'data/db/app_database.dart';
 import 'data/repositories/expense_repository.dart';
 import 'data/repositories/health_record_repository.dart';
@@ -31,6 +32,15 @@ Future<void> _startupTasks(ProviderContainer container, AppDatabase db) async {
     await HealthRecordRepository(db).purge(365);
     await MomentRepository(db).purge(365);
     await ExpenseRepository(db).purge(365);
+  } catch (_) {}
+  try {
+    // 提醒默认开启：若系统权限未授予（从未弹过授权框），启动时申请一次。
+    final settings = container.read(appSettingsProvider);
+    if (settings.reminderEnabled &&
+        !await NotificationService.isPermissionGranted()) {
+      await NotificationService.requestPermission();
+    }
+    await rescheduleDailyDigest(container.read);
   } catch (_) {}
   try {
     final spaces = await container.read(cloudSpaceRepoProvider).getAll();

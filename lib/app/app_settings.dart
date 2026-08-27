@@ -9,6 +9,8 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.reminderEnabled = true,
     this.reminderDaysBefore = 3,
+    this.dailyDigestEnabled = true,
+    this.dailyDigestHour = 9,
   });
 
   String currency;
@@ -18,11 +20,17 @@ class AppSettings {
   bool reminderEnabled;
   int reminderDaysBefore;
 
+  /// 每日提醒摘要：每天定时推送当日到期事项。
+  bool dailyDigestEnabled;
+  int dailyDigestHour;
+
   AppSettings copy() => AppSettings(
         currency: currency,
         themeMode: themeMode,
         reminderEnabled: reminderEnabled,
         reminderDaysBefore: reminderDaysBefore,
+        dailyDigestEnabled: dailyDigestEnabled,
+        dailyDigestHour: dailyDigestHour,
       );
 }
 
@@ -40,6 +48,9 @@ class AppSettingsController {
         await _repo.getBool(SettingsRepository.keyReminderEnabled) ?? true;
     s.reminderDaysBefore =
         await _repo.getInt(SettingsRepository.keyReminderDaysBefore) ?? 3;
+    s.dailyDigestEnabled =
+        await _repo.getBool('dailyDigestEnabled') ?? true;
+    s.dailyDigestHour = await _repo.getInt('dailyDigestHour') ?? 9;
     final theme = await _repo.get(SettingsRepository.keyThemeMode);
     s.themeMode = switch (theme) {
       'light' => ThemeMode.light,
@@ -54,6 +65,8 @@ class AppSettingsController {
     await _repo.setBool(SettingsRepository.keyReminderEnabled, s.reminderEnabled);
     await _repo.setInt(
         SettingsRepository.keyReminderDaysBefore, s.reminderDaysBefore);
+    await _repo.setBool('dailyDigestEnabled', s.dailyDigestEnabled);
+    await _repo.setInt('dailyDigestHour', s.dailyDigestHour);
     await _repo.set(SettingsRepository.keyThemeMode, switch (s.themeMode) {
       ThemeMode.light => 'light',
       ThemeMode.dark => 'dark',

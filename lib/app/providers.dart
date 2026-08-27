@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../core/ai/ai_client.dart';
+import '../core/notifications/notification_service.dart';
 import '../core/ai/ai_config.dart';
 import '../core/ai/ai_service.dart';
 import '../data/db/app_database.dart';
@@ -24,6 +25,7 @@ import '../domain/models/expense.dart';
 import '../domain/models/health_record.dart';
 import '../domain/models/moment.dart';
 import '../domain/models/pet.dart';
+import '../domain/services/health_calculator.dart';
 import '../shared/widgets/common.dart';
 import 'app_settings.dart';
 
@@ -172,6 +174,31 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     state = settings;
     await AppSettingsController(_repo).save(settings);
   }
+}
+
+/// 兼容 Ref/WidgetRef 的读取器。
+typedef ProviderReader = T Function<T>(ProviderListenable<T> provider);
+
+/// 按当前设置与全部宠物数据，重排「每日提醒摘要」通知。
+Future<void> rescheduleDailyDigest(ProviderReader read) async {
+  final settings = read(appSettingsProvider);
+  if (!settings.reminderEnabled || !settings.dailyDigestEnabled) {
+    await NotificationService.syncDailyDigest(
+        enabled: false, hour: 9, title: '', body: '');
+    return;
+  }
+  final pets = await read(petRepoProvider).getAll();
+  final map = <Pet, List<HealthRecord>>{};
+  for (final p in pets.where((p) => !p.isDeleted)) {
+    map[p] = await read(healthRepoProvider).getByPet(p.id);
+  }
+  final (title, body) = dailyDigestText(map);
+  await NotificationService.syncDailyDigest(
+    enabled: true,
+    hour: settings.dailyDigestHour,
+    title: title,
+    body: body,
+  );
 }
 
 // ---------- 宠物 ----------

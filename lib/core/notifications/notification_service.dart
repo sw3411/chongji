@@ -196,6 +196,51 @@ class NotificationService {
     }
   }
 
+  /// 每日提醒摘要：预排未来 7 天（内容为当前已知事项）。
+  /// 启动与保存记录时调用以刷新——即使几天没打开 App，排好的也照常推送。
+  static Future<void> syncDailyDigest({
+    required bool enabled,
+    required int hour,
+    required String title,
+    required String body,
+  }) async {
+    await initialize();
+    for (var i = 0; i < 7; i++) {
+      await _plugin.cancel('digest#$i'.hashCode);
+    }
+    if (!enabled) return;
+    if (!await isPermissionGranted()) return;
+    var day = DateTime.now();
+    var scheduled = 0;
+    while (scheduled < 7) {
+      final when = tz.TZDateTime.from(
+        DateTime(day.year, day.month, day.day, hour),
+        tz.local,
+      );
+      day = day.add(const Duration(days: 1));
+      if (when.isBefore(tz.TZDateTime.now(tz.local))) continue;
+      await _plugin.zonedSchedule(
+        'digest#$scheduled'.hashCode,
+        title,
+        body,
+        when,
+        NotificationDetails(
+          android: const AndroidNotificationDetails(
+            'daily_digest',
+            '每日提醒摘要',
+            channelDescription: '每天定时汇总当日到期事项',
+            importance: Importance.defaultImportance,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      scheduled++;
+    }
+  }
+
   /// 取消某宠物的全部提醒（删除宠物/关闭开关时）。
   static Future<void> cancelPet(String petId) async {
     await initialize();

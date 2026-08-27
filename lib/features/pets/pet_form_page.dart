@@ -191,6 +191,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
         enabled: settings.reminderEnabled,
         daysBefore: settings.reminderDaysBefore,
       );
+      await rescheduleDailyDigest(ref.read);
 
       if (mounted) {
         showAutoToast(context, _isEdit ? '已保存' : '${pet.name} 已加入家庭 🎉');

@@ -192,6 +192,7 @@ class _HealthRecordFormPageState extends ConsumerState<HealthRecordFormPage> {
       enabled: settings.reminderEnabled,
       daysBefore: settings.reminderDaysBefore,
     );
+    await rescheduleDailyDigest(ref.read);
   }
 
   @override

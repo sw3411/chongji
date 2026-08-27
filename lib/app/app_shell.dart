@@ -17,8 +17,7 @@ class AppShell extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    Widget navItem(IconData icon, IconData activeIcon, String label,
-        int index) {
+    Widget navItem(String emoji, String label, int index) {
       final selected = navigationShell.currentIndex == index;
       final color = selected ? cs.primary : cs.onSurfaceVariant;
       return InkWell(
@@ -32,7 +31,7 @@ class AppShell extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 选中时图标背后加胶囊底（潮汐式轻量选中态）。
+              // 选中时 emoji 背后加胶囊底（潮汐式轻量选中态）。
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 11, vertical: 2),
@@ -42,10 +41,9 @@ class AppShell extends StatelessWidget {
                         borderRadius: BorderRadius.circular(9),
                       )
                     : null,
-                child: Icon(
-                  selected ? activeIcon : icon,
-                  size: 19,
-                  color: selected ? cs.primary : color,
+                child: Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 17, height: 1.1),
                 ),
               ),
               const SizedBox(height: 2),
@@ -117,22 +115,14 @@ class AppShell extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
-                          child: navItem(Icons.home_outlined,
-                              Icons.home_rounded, '首页', 0))),
+                      child: Center(child: navItem('🏠', '首页', 0))),
                   Expanded(
-                      child: Center(
-                          child: navItem(Icons.monitor_heart_outlined,
-                              Icons.monitor_heart_rounded, '健康', 1))),
+                      child: Center(child: navItem('❤️', '健康', 1))),
                   Expanded(child: Center(child: centerButton())),
                   Expanded(
-                      child: Center(
-                          child: navItem(Icons.restaurant_outlined,
-                              Icons.restaurant_rounded, '饮食', 2))),
+                      child: Center(child: navItem('🍽️', '饮食', 2))),
                   Expanded(
-                      child: Center(
-                          child: navItem(Icons.photo_camera_back_outlined,
-                              Icons.photo_camera_back_rounded, '时刻', 3))),
+                      child: Center(child: navItem('📸', '时刻', 3))),
                 ],
               ),
             ),
@@ -155,7 +145,7 @@ class AppShell extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium),
             ),
             ListTile(
-              leading: const Icon(Icons.monitor_heart_outlined),
+              leading: const Text('💉', style: TextStyle(fontSize: 20)),
               title: const Text('健康记录',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('体重 / 疫苗 / 驱虫 / 就诊',
@@ -166,7 +156,7 @@ class AppShell extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_camera_back_outlined),
+              leading: const Text('📸', style: TextStyle(fontSize: 20)),
               title: const Text('时刻',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('游玩 / 美容 / 生日，带照片',
@@ -177,7 +167,7 @@ class AppShell extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.payments_outlined),
+              leading: const Text('💰', style: TextStyle(fontSize: 20)),
               title: const Text('消费',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('为它花的每一笔', style: TextStyle(fontSize: 12)),
@@ -187,8 +177,7 @@ class AppShell extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: Icon(Icons.auto_awesome_outlined,
-                  color: Theme.of(context).colorScheme.primary),
+              leading: const Text('✨', style: TextStyle(fontSize: 20)),
               title: const Text('AI 一句话记录',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle:

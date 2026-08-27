@@ -114,7 +114,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
       autoPushIfNeeded(ref, _petId);
       if (mounted) {
         HapticFeedback.mediumImpact();
-        showAutoToast(context, '已记录');
+        showAutoToast(context, '已记录 💰');
         context.pop();
       }
     } finally {

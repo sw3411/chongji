@@ -104,7 +104,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           ? EmptyView(
               icon: Icons.photo_camera_back_outlined,
               title: '还没有时刻',
-              subtitle: '生日、游玩、美容、纪念日…\n用照片记录值得纪念的日子',
+              subtitle: '生日、游玩、美容、纪念日…\n用照片记录值得纪念的日子 📸',
               action: FilledButton(
                 onPressed: () => context.push('/moment/new'),
                 child: const Text('记录第一个时刻'),

@@ -49,8 +49,8 @@ class AppTheme {
   static const List<Color> sceneGradientDark = [Color(0xFF4A3828), Color(0xFF2B2118)];
 
   /// 页面顶部环境光渐变（极淡，过渡进画布）。
-  static const List<Color> headerGradientLight = [Color(0xFFF1EAE1), Color(0xFFF3F0EA)];
-  static const List<Color> headerGradientDark = [Color(0xFF201C17), Color(0xFF131110)];
+  static const List<Color> headerGradientLight = [Color(0xFFFBFAF8), Color(0xFFFFFFFF)];
+  static const List<Color> headerGradientDark = [Color(0xFF464040), Color(0xFF3B3535)];
 
   /// 毛玻璃表面（悬浮底导用）。
   static Color glassSurface(bool dark) =>
@@ -64,15 +64,15 @@ class AppTheme {
   static const Color inkTertiary = Color(0xFFAEA69C);
 
   /// 浅色：暖纸画布 + 白瓷片 + 片内发丝线。
-  static const Color lightBg = Color(0xFFF3F0EA);
-  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightBg = Color(0xFFFFFFFF);
+  static const Color lightSurface = Color(0xFFF7F5F2);
   static const Color lightDivider = Color(0xFFECE8E1);
 
   /// 深色：暖夜画布 + 微亮瓷片。
-  static const Color darkBg = Color(0xFF131110);
-  static const Color darkSurface = Color(0xFF1D1A17);
-  static const Color darkSurfaceAlt = Color(0xFF262219);
-  static const Color darkDivider = Color(0xFF2B2721);
+  static const Color darkBg = Color(0xFF3B3535);
+  static const Color darkSurface = Color(0xFF453E3E);
+  static const Color darkSurfaceAlt = Color(0xFF4C4545);
+  static const Color darkDivider = Color(0xFF4A4343);
 
   /// 状态色（仅用于语义：到期/涨跌/成功）。
   static const Color warnRed = Color(0xFFE25B55);

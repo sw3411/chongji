@@ -50,6 +50,12 @@ class _HealthPageState extends ConsumerState<HealthPage> {
         .where((r) => r.type == HealthRecordType.weight && r.value != null)
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
+    // 折线图只看近 3 个月；窗口内不足 2 点时回退全部（保证趋势可用）。
+    var chartWeights = weights
+        .where((r) => r.date
+            .isAfter(DateTime.now().subtract(const Duration(days: 90))))
+        .toList();
+    if (chartWeights.length < 2) chartWeights = weights;
     final bcsRecords = records
         .where((r) => r.type == HealthRecordType.bcs && r.value != null)
         .toList()
@@ -119,7 +125,7 @@ class _HealthPageState extends ConsumerState<HealthPage> {
           ? EmptyView(
               icon: Icons.monitor_heart_outlined,
               title: '还没有健康记录',
-              subtitle: '记录体重、疫苗、驱虫，到期自动提醒',
+              subtitle: '记录体重、疫苗、驱虫，到期自动提醒 ⏰',
               action: FilledButton(
                 onPressed: () => context.push('/health/record/new'),
                 child: const Text('记第一条'),
@@ -145,22 +151,22 @@ class _HealthPageState extends ConsumerState<HealthPage> {
                   onAddTap: () => context.push('/health/record/new'),
                 ),
 
-                // ---- 趋势图（融入页面，无卡片盒）（不足 2 条体重时常驻引导）----
-                if (weights.length >= 2)
-                  _TrendChart(weights: weights)
+                // ---- 趋势图：近 3 个月，融入页面（不足 2 条体重时常驻引导）----
+                if (chartWeights.length >= 2)
+                  _TrendChart(weights: chartWeights)
                 else
                   _ChartTeaser(weightCount: weights.length),
                 const SizedBox(height: 20),
 
                 // ---- 疫苗与驱虫 ----
                 if (hasCycleRecords) ...[
-                  const _SectionLabel('疫苗与驱虫'),
+                  const _SectionLabel('疫苗与驱虫 💉'),
                   _DueGroup(records: records),
                   const SizedBox(height: 18),
                 ],
 
                 // ---- 记录 ----
-                const _SectionLabel('记录'),
+                const _SectionLabel('记录 📋'),
                 if (presentTypes.length > 1) ...[
                   SizedBox(
                     height: 32,
@@ -626,8 +632,8 @@ class _ChartTeaser extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final text = weightCount == 0
-        ? '记录体重后，这里会出现体重×体型趋势图'
-        : '已有 1 次体重，再记 1 次即可看到趋势对比';
+        ? '记录体重后，这里会出现体重趋势图 📈'
+        : '已有 1 次体重，再记 1 次即可看到趋势对比 🐾';
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 0),
       child: Row(
@@ -1053,7 +1059,7 @@ class _QuietCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        color: dark ? Colors.white.withValues(alpha: 0.04) : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       ),
       child: child,

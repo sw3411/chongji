@@ -90,7 +90,7 @@ class FormSaveBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: dark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+          color: dark ? Colors.white.withValues(alpha: 0.05) : AppTheme.lightSurface,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           border: dark
               ? Border.all(color: Colors.white.withValues(alpha: 0.06))
@@ -726,16 +726,17 @@ void showAutoToast(
 /// - **加粗** → 强调色关键数字（尺寸克制，与正文协调不割裂）
 /// - 正文 13.5/1.7，标题 15
 MarkdownStyleSheet digestMarkdownStyle(BuildContext context) {
-  final cs = Theme.of(context).colorScheme;
   return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
     p: const TextStyle(fontSize: 13.5, height: 1.7),
-    strong: TextStyle(
-      fontSize: 14.5,
+    strong: const TextStyle(
+      fontSize: 13.5,
       fontWeight: FontWeight.w700,
-      color: cs.primary,
-      fontFeatures: const [FontFeature.tabularFigures()],
+      fontFeatures: [FontFeature.tabularFigures()],
     ),
     listBullet: const TextStyle(fontSize: 13.5, height: 1.7),
+    // 引用/代码块不带底色（融入画布，避免独立的灰底色带）。
+    blockquoteDecoration: const BoxDecoration(),
+    code: const TextStyle(fontSize: 12.5),
     h2: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
     h3: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
   );
